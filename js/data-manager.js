@@ -24,9 +24,10 @@ const STORAGE_KEYS = {
     AVAILABLE_PARTICIPANTS: 'raffle_available_participants',
     AVAILABLE_PRIZES: 'raffle_available_prizes',
     RAFFLE_STATE: 'raffle_state',
-    BACKUP: 'raffle_backup',
     LAST_SAVE: 'raffle_last_save',
-    ANIMATION_SETTINGS: 'raffle_animation_settings'
+    ANIMATION_SETTINGS: 'raffle_animation_settings',
+    ACTIVE_TAB: 'raffle_active_tab'
+    // BACKUP видалено - немає функції відновлення, автозбереження достатньо
 };
 
 // ===== ФУНКЦІЇ ЛОКАЛЬНОГО ЗБЕРЕЖЕННЯ =====
@@ -54,8 +55,7 @@ function saveToStorage() {
             prizeDrumText: document.getElementById('prize-drum')?.textContent || 'Готовий до розіграшу!',
             startBtnVisible: document.getElementById('start-raffle-btn')?.style.display !== 'none',
             nextBtnVisible: document.getElementById('next-round-btn')?.style.display !== 'none',
-            newBtnVisible: document.getElementById('new-raffle-btn')?.style.display !== 'none',
-            raffleMessage: document.getElementById('raffle-message')?.innerHTML || ''
+            newBtnVisible: document.getElementById('new-raffle-btn')?.style.display !== 'none'
         };
         localStorage.setItem(STORAGE_KEYS.RAFFLE_STATE, JSON.stringify(raffleState));
         
@@ -113,14 +113,12 @@ function loadFromStorage() {
                     const startBtn = document.getElementById('start-raffle-btn');
                     const nextBtn = document.getElementById('next-round-btn');
                     const newBtn = document.getElementById('new-raffle-btn');
-                    const raffleMessage = document.getElementById('raffle-message');
                     
-                    if (participantDrum) participantDrum.textContent = raffleState.participantDrumText;
-                    if (prizeDrum) prizeDrum.textContent = raffleState.prizeDrumText;
+                    setDrumText(participantDrum, raffleState.participantDrumText);
+                    setDrumText(prizeDrum, raffleState.prizeDrumText);
                     if (startBtn) startBtn.style.display = raffleState.startBtnVisible ? 'inline-block' : 'none';
                     if (nextBtn) nextBtn.style.display = raffleState.nextBtnVisible ? 'inline-block' : 'none';
                     if (newBtn) newBtn.style.display = raffleState.newBtnVisible ? 'inline-block' : 'none';
-                    if (raffleMessage) raffleMessage.innerHTML = raffleState.raffleMessage;
                     
                 } catch (e) {
                     console.error('Помилка відновлення стану розіграшу:', e);
@@ -148,27 +146,11 @@ function loadFromStorage() {
     }
 }
 
-function createBackup() {
-    try {
-        const backupData = {
-            participants: participants,
-            prizes: prizes,
-            results: results,
-            currentRound: currentRound,
-            isRaffleActive: isRaffleActive,
-            availableParticipants: availableParticipants,
-            availablePrizes: availablePrizes,
-            timestamp: new Date().toISOString()
-        };
-        localStorage.setItem(STORAGE_KEYS.BACKUP, JSON.stringify(backupData));
-    } catch (error) {
-        console.error('Помилка створення резервної копії:', error);
-    }
-}
+// createBackup функція видалена - не використовувалася для відновлення
 
 function clearStoredData() {
     if (confirm('Видалити всі збережені дані? Ця дія незворотна.')) {
-        createBackup(); // Створюємо резервну копію перед видаленням
+        // createBackup() видалено - автозбереження достатньо для захисту даних
         
         localStorage.removeItem(STORAGE_KEYS.PARTICIPANTS);
         localStorage.removeItem(STORAGE_KEYS.PRIZES);
@@ -179,7 +161,7 @@ function clearStoredData() {
         localStorage.removeItem(STORAGE_KEYS.AVAILABLE_PRIZES);
         localStorage.removeItem(STORAGE_KEYS.RAFFLE_STATE);
         localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
-        // Налаштування анімації не очищаються: STORAGE_KEYS.ANIMATION_SETTINGS
+        // Налаштування не очищаються: STORAGE_KEYS.ANIMATION_SETTINGS, STORAGE_KEYS.ACTIVE_TAB
         
         participants = [];
         prizes = [];
@@ -200,16 +182,14 @@ function clearStoredData() {
         const startBtn = document.getElementById('start-raffle-btn');
         const nextBtn = document.getElementById('next-round-btn');
         const newBtn = document.getElementById('new-raffle-btn');
-        const raffleMessage = document.getElementById('raffle-message');
         
-        if (participantDrum) participantDrum.textContent = 'Готовий до розіграшу!';
-        if (prizeDrum) prizeDrum.textContent = 'Готовий до розіграшу!';
+        setDrumText(participantDrum, 'Готовий до розіграшу!');
+        setDrumText(prizeDrum, 'Готовий до розіграшу!');
         if (startBtn) startBtn.style.display = 'inline-block';
         if (nextBtn) nextBtn.style.display = 'none';
         if (newBtn) newBtn.style.display = 'none';
-        if (raffleMessage) raffleMessage.innerHTML = '';
         
-        alert('Всі збережені дані видалено! Резервна копія створена.');
+        alert('🗑️ Всі дані очищено!\n\nВи можете почати з нуля - додати нових учасників та призи.');
     }
 }
 
@@ -397,8 +377,7 @@ function handleExcelLoad(event) {
             const data = e.target.result;
             const workbook = XLSX.read(data, { type: 'binary' });
             
-            // Створити резервну копію перед імпортом
-            createBackup();
+            // Створити резервну копію перед імпортом - видалено, автозбереження достатньо
             
             // Очистити поточні дані
             participants = [];
@@ -624,6 +603,9 @@ function handleExcelLoad(event) {
         } catch (error) {
             console.error('Помилка при читанні Excel файлу:', error);
             alert('Помилка при читанні Excel файлу! Переконайтеся що файл має правильний формат.');
+        } finally {
+            // Очистити input для можливості повторного імпорту
+            event.target.value = '';
         }
     };
     reader.readAsBinaryString(file);
@@ -740,12 +722,22 @@ function clearResults() {
     }
 
     if (confirm('Ви впевнені, що хочете очистити всі результати?')) {
-        createBackup(); // Створюємо резервну копію
+        // createBackup() видалено - автозбереження достатньо
         results = [];
         currentRound = 0; // Скинути лічильник раундів
         if (typeof updateResultsDisplay === 'function') updateResultsDisplay();
         if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         markAsChanged();
+    }
+}
+
+// ===== ДОПОМІЖНІ ФУНКЦІЇ =====
+
+// Функція для встановлення тексту барабану з title атрибутом
+function setDrumText(drumElement, text) {
+    if (drumElement) {
+        drumElement.textContent = text;
+        drumElement.title = text; // Показує повний текст при наведенні
     }
 }
 
@@ -777,7 +769,6 @@ window.DataManager = {
     // Функції
     saveToStorage,
     loadFromStorage,
-    createBackup,
     clearStoredData,
     setupAutoSave,
     setupBeforeUnload,
@@ -794,24 +785,4 @@ window.DataManager = {
     clearResults
 };
 
-// Також зробити функції доступними напряму для обратної сумісності
-window.participants = () => participants;
-window.prizes = () => prizes;
-window.results = () => results;
-window.availableParticipants = () => availableParticipants;
-window.availablePrizes = () => availablePrizes;
-window.currentRound = () => currentRound;
-window.isRaffleActive = () => isRaffleActive;
-window.saveToStorage = saveToStorage;
-window.loadFromStorage = loadFromStorage;
-window.markAsChanged = markAsChanged;
-window.addParticipant = addParticipant;
-window.removeParticipant = removeParticipant;
-window.addPrize = addPrize;
-window.removePrize = removePrize;
-window.loadExcelData = loadExcelData;
-window.handleExcelLoad = handleExcelLoad;
-window.exportToExcel = exportToExcel;
-window.exportResultsToExcel = exportResultsToExcel;
-window.clearStoredData = clearStoredData;
-window.clearResults = clearResults;
+// Глобальні функції видалено - використовуються через обгортки в main.js або DataManager модуль

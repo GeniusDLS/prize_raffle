@@ -229,7 +229,8 @@ body {
     border-radius: 20px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3);
-    min-width: 300px;
+    width: 400px; /* Розширено з 380px до 400px */
+    flex-shrink: 0; /* Запобігає зменшенню */
 }
 
 .drum h3 {
@@ -256,10 +257,20 @@ body {
     font-weight: bold;
     color: #2E8B35;
     transition: all 0.5s ease;
+    width: 100%;
+    padding: 0 10px;
+    box-sizing: border-box;
+    white-space: nowrap; /* Запобігає переносу рядка */
+    overflow: hidden; /* Приховує переповнення */
+    text-overflow: ellipsis; /* Додає "..." в кінці */
 }
 
 .drum-content.spinning {
-    animation: spin 2s linear infinite;
+    animation: spin 3s linear infinite; /* Оновлено з 2s до 3s */
+}
+
+.drum-content.slowing-down {
+    animation: spinSlowDown 2s ease-out forwards; /* Оновлено з 1s до 2s, тривалість може змінюватися динамічно через JS */
 }
 
 .drum-content.result-highlight {
@@ -288,6 +299,33 @@ body {
     50% { transform: translateY(20px); opacity: 0.6; }
     75% { transform: translateY(-10px); opacity: 0.8; }
     100% { transform: translateY(0px); opacity: 1; }
+}
+
+@keyframes spinSlowDown {
+    0% { 
+        transform: translateY(0px); 
+        opacity: 0.6;
+    }
+    20% { 
+        transform: translateY(-15px); 
+        opacity: 0.7;
+    }
+    40% { 
+        transform: translateY(10px); 
+        opacity: 0.8;
+    }
+    60% { 
+        transform: translateY(-5px); 
+        opacity: 0.9;
+    }
+    80% { 
+        transform: translateY(2px); 
+        opacity: 0.95;
+    }
+    100% { 
+        transform: translateY(0px); 
+        opacity: 1;
+    }
 }
 
 .raffle-controls {
@@ -458,7 +496,8 @@ body {
     }
     
     .drum {
-        min-width: 250px;
+        width: 320px; /* Розширено з 300px до 320px для мобільних */
+        max-width: 90vw; /* Не більше 90% ширини екрану */
     }
     
     .form-group {
@@ -975,5 +1014,28 @@ body {
     
     .settings-actions .btn {
         margin-bottom: 10px;
+    }
+}
+
+/* Додати ефект підсвічування для барабанів (drum) з анімацією та масштабуванням */
+.drum.result-highlight {
+    box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3), 0 0 30px rgba(62, 180, 73, 0.6);
+    border: 3px solid #3EB449;
+    animation: drumGlow 1.5s ease-in-out;
+    transform: scale(1.02);
+}
+
+@keyframes drumGlow {
+    0% {
+        box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3), 0 0 15px rgba(62, 180, 73, 0.3);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 15px 40px rgba(62, 180, 73, 0.5), 0 0 40px rgba(62, 180, 73, 0.8);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3), 0 0 20px rgba(62, 180, 73, 0.4);
+        transform: scale(1.02);
     }
 }

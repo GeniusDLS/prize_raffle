@@ -74,14 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ===== ГЛОБАЛЬНІ ОБРОБНИКИ ПОДІЙ =====
 
-// Обробник для завантаження Excel файлів (якщо потрібен для compatibility)
-if (typeof handleExcelLoad === 'undefined') {
-    window.handleExcelLoad = function(event) {
-        if (window.DataManager && window.DataManager.handleExcelLoad) {
-            window.DataManager.handleExcelLoad(event);
-        }
-    };
-}
+// Обробник для завантаження Excel файлів видалено - використовуємо тільки версію з DataManager
 
 // ===== ФУНКЦІЇ ДЛЯ ЗВОРОТНОЇ СУМІСНОСТІ =====
 
@@ -169,9 +162,7 @@ window.clearStoredData = function() {
     if (window.DataManager) window.DataManager.clearStoredData();
 };
 
-window.clearResults = function() {
-    if (window.DataManager) window.DataManager.clearResults();
-};
+// clearResults видалено - використовується напряму з DataManager
 
 // Функції popup
 window.showWinnerPopup = function(winnerName, winnerDivision, prizeName) {
@@ -182,22 +173,7 @@ window.hideWinnerPopup = function() {
     if (window.RaffleEngine) window.RaffleEngine.hideWinnerPopup();
 };
 
-// Функції налаштувань анімації
-window.showAnimationSettings = function() {
-    if (window.RaffleEngine) window.RaffleEngine.showAnimationSettings();
-};
-
-window.hideAnimationSettings = function() {
-    if (window.RaffleEngine) window.RaffleEngine.hideAnimationSettings();
-};
-
-window.saveAnimationSettings = function() {
-    if (window.RaffleEngine) window.RaffleEngine.saveAnimationSettings();
-};
-
-window.resetAnimationSettings = function() {
-    if (window.RaffleEngine) window.RaffleEngine.resetAnimationSettings();
-};
+// Функції налаштувань анімації видалено - використовуються напряму з RaffleEngine
 
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 

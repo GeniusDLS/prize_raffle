@@ -20,6 +20,9 @@ function showPage(pageId) {
         }
     });
     
+    // Зберегти активну вкладку
+    saveActiveTab(pageId);
+    
     if (pageId === 'raffle') {
         // Якщо розіграш не активний, показуємо загальну статистику
         if (!window.DataManager.isRaffleActive) {
@@ -328,17 +331,16 @@ function setupButtons() {
 // ===== НАЛАШТУВАННЯ EXCEL INPUT =====
 
 function setupExcelInput() {
-    const excelInput = document.getElementById('excel-input');
-    if (excelInput) {
-        excelInput.addEventListener('change', window.DataManager.handleExcelLoad);
-    }
+    // Excel input обробляється через onchange атрибут в HTML
+    // Цей обробник видалено щоб уникнути подвійного виклику
 }
 
 // ===== НАЛАШТУВАННЯ ВІДОБРАЖЕННЯ АКТИВНОЇ СТОРІНКИ =====
 
 function setupInitialPage() {
-    // Показати сторінку даних за замовчуванням
-    showPage('data');
+    // Відновити збережену активну вкладку або показати вкладку даних за замовчуванням
+    const savedTab = loadActiveTab();
+    showPage(savedTab);
 }
 
 // ===== ІНІЦІАЛІЗАЦІЯ UI =====
@@ -359,25 +361,27 @@ function initializeUI() {
     console.log('UI Controller ініціалізовано');
 }
 
+// ===== ЗБЕРЕЖЕННЯ АКТИВНОЇ ВКЛАДКИ =====
+
+function saveActiveTab(pageId) {
+    try {
+        localStorage.setItem('raffle_active_tab', pageId);
+    } catch (error) {
+        console.error('Помилка збереження активної вкладки:', error);
+    }
+}
+
+function loadActiveTab() {
+    try {
+        return localStorage.getItem('raffle_active_tab') || 'data'; // За замовчуванням - вкладка даних
+    } catch (error) {
+        console.error('Помилка завантаження активної вкладки:', error);
+        return 'data';
+    }
+}
+
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
-
-function formatDateTime(dateString) {
-    if (!dateString) return 'Невідомо';
-    return new Date(dateString).toLocaleString('uk-UA');
-}
-
-function formatNumber(number) {
-    return number.toLocaleString('uk-UA');
-}
-
-function escapeHtml(unsafe) {
-    return unsafe
-         .replace(/&/g, "&amp;")
-         .replace(/</g, "&lt;")
-         .replace(/>/g, "&gt;")
-         .replace(/"/g, "&quot;")
-         .replace(/'/g, "&#039;");
-}
+// Утилітарні функції видалено як невикористовувані
 
 // ===== ЕКСПОРТ ФУНКЦІЙ ДЛЯ ГЛОБАЛЬНОГО ДОСТУПУ =====
 
@@ -385,6 +389,10 @@ function escapeHtml(unsafe) {
 window.UIController = {
     // Навігація
     showPage,
+    
+    // Збереження стану
+    saveActiveTab,
+    loadActiveTab,
     
     // Статистика
     initializeRaffleStats,
@@ -405,12 +413,9 @@ window.UIController = {
     setupInitialPage,
     
     // Ініціалізація
-    initializeUI,
+    initializeUI
     
-    // Утилітарні функції
-    formatDateTime,
-    formatNumber,
-    escapeHtml
+    // Утилітарні функції видалено як невикористовувані
 };
 
 // Також зробити функції доступними напряму для обратної сумісності
