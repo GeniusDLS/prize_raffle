@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Розіграш призів</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Індикатор автозбереження -->
+    <div id="auto-save-indicator" class="auto-save-indicator">💾 Автозбереження активне</div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <img src="logo.png" alt="Логотип" class="logo">
+                <h1>Розіграш призів</h1>
+                <img src="logo.png" alt="Логотип" class="logo">
+            </div>
+        </div>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showPage('data')">📝 Дані</button>
+            <button class="nav-tab" onclick="showPage('raffle')">🎲 Розіграш</button>
+            <button class="nav-tab" onclick="showPage('results')">🏆 Результати</button>
+        </div>
+
+        <!-- Сторінка введення даних -->
+        <div id="data-page" class="page active">
+            <div class="storage-controls">
+                <h4>💾 Управління даними</h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="loadExcelData()">📊 Імпорт з Excel</button>
+                    <button class="btn btn-primary" onclick="exportToExcel()">📋 Експорт в Excel</button>
+                    <button class="btn btn-warning" onclick="clearStoredData()">🗑️ Очистити збережені дані</button>
+                    <button class="btn btn-secondary" onclick="showAnimationSettings()">⚙️ Налаштування анімації</button>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    Дані автоматично зберігаються при кожній зміні та відновлюються при перезавантаженні сторінки.
+                </p>
+            </div>
+
+            <div class="form-section">
+                <h3>👥 Учасники</h3>
+                <div class="form-group">
+                    <input type="text" id="participant-name" placeholder="Ім'я учасника" style="flex: 2">
+                    <input type="text" id="participant-division" placeholder="Підрозділ" style="flex: 2">
+                    <input type="number" id="participant-weight" placeholder="Вага" min="1" value="1" style="flex: 1">
+                    <button class="btn btn-primary" onclick="addParticipant()">Додати</button>
+                </div>
+                <div id="participants-error" class="error-message" style="display: none;"></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ім'я</th>
+                            <th>Підрозділ</th>
+                            <th>Вага</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="participants-list"></tbody>
+                </table>
+            </div>
+
+            <div class="form-section">
+                <h3>🎁 Призи</h3>
+                <div class="form-group">
+                    <input type="text" id="prize-name" placeholder="Назва призу" style="flex: 2">
+                    <input type="number" id="prize-count" placeholder="Кількість" min="1" value="1" style="flex: 1">
+                    <button class="btn btn-primary" onclick="addPrize()">Додати</button>
+                </div>
+                <div id="prizes-error" class="error-message" style="display: none;"></div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Назва</th>
+                            <th>Кількість</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prizes-list"></tbody>
+                </table>
+            </div>
+
+            <input type="file" id="excel-input" accept=".xlsx,.xls" style="display: none;" onchange="handleExcelLoad(event)">
+        </div>
+
+        <!-- Сторінка розіграшу -->
+        <div id="raffle-page" class="page">
+            <div class="raffle-container">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-participants">0</div>
+                        <div>Учасників</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-prizes">0</div>
+                        <div>Призів</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="current-round">0</div>
+                        <div>Раунд</div>
+                    </div>
+                </div>
+
+                <div class="drums-container">
+                    <div class="drum">
+                        <h3>👤 Учасник</h3>
+                        <div class="drum-window">
+                            <div class="drum-content" id="participant-drum">Готовий до розіграшу!</div>
+                        </div>
+                    </div>
+                    <div class="drum">
+                        <h3>🎁 Приз</h3>
+                        <div class="drum-window">
+                            <div class="drum-content" id="prize-drum">Готовий до розіграшу!</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="raffle-controls">
+                    <button class="btn btn-primary" id="start-raffle-btn" onclick="startRaffle()">🎲 Розпочати розіграш</button>
+                    <button class="btn btn-primary" id="next-round-btn" onclick="nextRound()" style="display: none;">➡️ Наступний раунд</button>
+                    <button class="btn btn-primary" id="new-raffle-btn" onclick="startNewRaffle()" style="display: none;">🆕 Новий розіграш</button>
+                    <button class="btn btn-danger" onclick="resetRaffle()">🔄 Скинути розіграш</button>
+                </div>
+
+                <div id="raffle-message" style="margin-top: 20px; font-size: 1.2em; font-weight: bold;"></div>
+            </div>
+        </div>
+
+        <!-- Сторінка результатів -->
+        <div id="results-page" class="page">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="results-total-rounds">0</div>
+                    <div>Загалом раундів</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="results-winners">0</div>
+                    <div>Переможців</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="results-prizes-given">0</div>
+                    <div>Призів роздано</div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>🏆 Результати розіграшу</h3>
+                <div id="results-list" class="results-list">
+                    <p style="text-align: center; color: #666;">Результати з'являться після проведення розіграшу</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn btn-primary" onclick="exportResultsToExcel()">📊 Експортувати в Excel</button>
+                <button class="btn btn-danger" onclick="clearResults()">🗑️ Очистити результати</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup з привітанням переможця -->
+    <div id="winner-popup" class="winner-popup">
+        <div class="popup-overlay"></div>
+        <div class="popup-content">
+            <div class="confetti-container">
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+            </div>
+            <div class="trophy-icon">🏆</div>
+            <div class="popup-title">🎉 ВІТАЄМО! 🎉</div>
+            <div class="winner-info">
+                <div class="winner-name" id="winner-name">Учасник 16</div>
+                <div class="winner-division" id="winner-division">Підрозділ</div>
+                <div class="winner-action">виграв</div>
+                <div class="winner-prize" id="winner-prize">Приз 10</div>
+            </div>
+            <div class="congratulations">
+                Щиро вітаємо з перемогою!<br>
+                Бажаємо гарного настрою та успіхів!
+            </div>
+            <div class="celebration-emoji">🎊 ✨ 🎈 ✨ 🎊</div>
+            
+            <!-- Кнопка Далі та countdown -->
+            <div class="popup-actions">
+                <button class="btn btn-primary popup-continue-btn" onclick="hideWinnerPopup()">Далі</button>
+                <div class="popup-countdown">
+                    Автоматично закриється через: <span id="countdown-timer">10</span> сек
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Підключення бібліотек та скриптів -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
