@@ -158,6 +158,74 @@
                 <button class="btn btn-danger" onclick="clearResults()">🗑️ Очистити результати</button>
             </div>
         </div>
+
+        <!-- Сторінка налаштувань анімації -->
+        <div id="animation-settings-page" class="page">
+            <div class="form-section">
+                <h3>⚙️ Налаштування анімації</h3>
+                <p style="margin-bottom: 20px; color: #666;">Налаштуйте параметри анімації розіграшу під ваші потреби</p>
+                
+                <div class="settings-grid">
+                    <div class="setting-item">
+                        <label for="spin-duration">🎲 Тривалість обертання барабанів (секунди):</label>
+                        <input type="number" id="spin-duration" min="0.5" max="10" step="0.5" value="2">
+                        <small>Як довго барабани будуть крутитися під час розіграшу</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="spin-speed">⚡ Швидкість зміни елементів (мілісекунди):</label>
+                        <input type="number" id="spin-speed" min="50" max="500" step="10" value="100">
+                        <small>Швидкість зміни імен та призів на барабанах</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="spin-rotations">🔄 Кількість обертів:</label>
+                        <input type="number" id="spin-rotations" min="0.5" max="10" step="0.5" value="3">
+                        <small>Скільки повних обертів зробить барабан (можна дробові: 0.5, 1.5, тощо)</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="easing-speed">📉 Швидкість наближення:</label>
+                        <input type="number" id="easing-speed" min="0.1" max="1.0" step="0.1" value="0.8">
+                        <small>Як швидко анімація сповільнюється до зупинки (0.1 - плавно, 1.0 - різко)</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="result-highlight-duration">✨ Тривалість підсвічування результату (секунди):</label>
+                        <input type="number" id="result-highlight-duration" min="1" max="10" step="0.5" value="3">
+                        <small>Як довго результат буде підсвічений після завершення</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="popup-countdown-time">⏰ Час автозакриття popup (секунди):</label>
+                        <input type="number" id="popup-countdown-time" min="5" max="60" step="1" value="10">
+                        <small>Через скільки секунд автоматично закриється вікно з привітанням</small>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="enable-sound">🔊 Звукові ефекти:</label>
+                        <input type="checkbox" id="enable-sound">
+                        <small>Увімкнути звукові ефекти під час розіграшу</small>
+                    </div>
+                </div>
+                
+                <div class="settings-actions">
+                    <button class="btn btn-primary" onclick="saveAnimationSettings()">💾 Зберегти налаштування</button>
+                    <button class="btn btn-warning" onclick="resetAnimationSettings()">🔄 Скинути на початкові</button>
+                    <button class="btn btn-secondary" onclick="hideAnimationSettings()">⬅️ Повернутись</button>
+                </div>
+                
+                <div class="settings-info">
+                    <h4>💡 Поради:</h4>
+                    <ul>
+                        <li>Для швидших розіграшів зменште тривалість обертання</li>
+                        <li>Збільште швидкість зміни для більш динамічного ефекту</li>
+                        <li>Налаштування зберігаються автоматично і не втрачаються при очищенні даних</li>
+                        <li>Звукові ефекти працюють не в усіх браузерах</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Popup з привітанням переможця -->

@@ -27,6 +27,8 @@ const STORAGE_KEYS = {
 const DEFAULT_ANIMATION_SETTINGS = {
     spinDuration: 2, // секунди
     spinSpeed: 100, // мілісекунди
+    spinRotations: 3, // кількість повних обертів (можна дробові: 0.5, 1.5, тощо)
+    easingSpeed: 0.8, // швидкість наближення (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
     resultHighlightDuration: 3, // секунди
     popupCountdownTime: 10, // секунди
     enableSound: false
@@ -505,6 +507,49 @@ function startRaffle() {
     nextRound();
 }
 
+// Нова функція для складної анімації з обертами та сповільненням
+function animateSpinWheels(participantDrum, prizeDrum, availableParticipants, availablePrizes, callback) {
+    const rotations = animationSettings.spinRotations; // Кількість обертів
+    const duration = animationSettings.spinDuration * 1000; // Тривалість в мс
+    const baseSpeed = animationSettings.spinSpeed; // Базова швидкість
+    const easingSpeed = animationSettings.easingSpeed; // Швидкість наближення (0.1-1.0)
+    
+    // Розрахунок загальної кількості змін на основі обертів
+    const totalChanges = Math.max(10, Math.floor(rotations * 20)); // Мінімум 10 змін, максимум залежить від обертів
+    
+    let currentChange = 0;
+    let lastChangeTime = Date.now();
+    let currentInterval = baseSpeed;
+    
+    const performNextChange = () => {
+        if (currentChange >= totalChanges) {
+            callback(); // Завершення анімації
+            return;
+        }
+        
+        // Оновлення значень барабанів
+        participantDrum.textContent = availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name;
+        prizeDrum.textContent = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
+        
+        currentChange++;
+        
+        // Розрахунок прогресу (0 до 1)
+        const progress = currentChange / totalChanges;
+        
+        // Використовуємо ease-out функцію для плавного сповільнення
+        const easingFactor = Math.pow(progress, easingSpeed);
+        
+        // Збільшуємо інтервал для сповільнення
+        currentInterval = baseSpeed * (1 + easingFactor * 4); // Максимальне сповільнення в 5 разів
+        
+        // Плануємо наступну зміну
+        setTimeout(performNextChange, currentInterval);
+    };
+    
+    // Починаємо анімацію
+    performNextChange();
+}
+
 function nextRound() {
     if (availableParticipants.length === 0 || availablePrizes.length === 0) {
         endRaffle();
@@ -521,15 +566,8 @@ function nextRound() {
     participantDrum.classList.add('spinning');
     prizeDrum.classList.add('spinning');
 
-    // Показати випадкові імена під час обертання
-    const spinInterval = setInterval(() => {
-        participantDrum.textContent = availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name;
-        prizeDrum.textContent = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
-    }, animationSettings.spinSpeed);
-
-    // Зупинити через налаштований час і показати результат
-    setTimeout(() => {
-        clearInterval(spinInterval);
+    // Запуск нової складної анімації з обертами та сповільненням
+    animateSpinWheels(participantDrum, prizeDrum, availableParticipants, availablePrizes, () => {
         
         // Вибір переможця з урахуванням ваги
         const winner = selectWeightedRandom(availableParticipants);
@@ -580,7 +618,7 @@ function nextRound() {
         } else {
             endRaffle();
         }
-    }, animationSettings.spinDuration * 1000);
+    }); // Кінець callback функції animateSpinWheels
 
     document.getElementById('next-round-btn').style.display = 'none';
 }
@@ -725,84 +763,192 @@ function handleExcelLoad(event) {
                 return;
             }
 
-            // Спробувати знайти дані на першому листі
-            const firstSheet = workbook.Sheets[sheetNames[0]];
-            const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-            
-            if (jsonData.length < 2) {
-                alert('Excel файл не містить достатньо даних!');
-                return;
-            }
-
-            // Знайти секції учасників та призів
-            let participantsStartRow = -1;
-            let prizesStartRow = -1;
-            
-            for (let i = 0; i < jsonData.length; i++) {
-                const row = jsonData[i];
-                if (row && row.length >= 2) {
-                    // Шукаємо заголовки для учасників
-                    if ((row[0] && row[0].toString().toLowerCase().includes('ім')) && 
-                        (row[1] && row[1].toString().toLowerCase().includes('підрозділ')) &&
-                        (row[2] && row[2].toString().toLowerCase().includes('ваг'))) {
-                        participantsStartRow = i;
-                    }
-                    // Шукаємо заголовки для призів
-                    if ((row[0] && row[0].toString().toLowerCase().includes('назв')) && 
-                        (row[1] && (row[1].toString().toLowerCase().includes('кільк') || row[1].toString().toLowerCase().includes('к-сть')))) {
-                        prizesStartRow = i;
-                    }
-                }
-            }
-
-            // Якщо не знайшли заголовки, спробуємо автоматично
-            if (participantsStartRow === -1) {
-                // Припускаємо що перші дані - учасники
-                participantsStartRow = 0;
-                // Знайти де починаються призи (шукаємо пустий рядок або зміну формату)
-                for (let i = 1; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    if (!row || row.length === 0 || (row[0] === '' && row[1] === '')) {
-                        prizesStartRow = i + 1;
-                        break;
-                    }
-                }
-            }
-
-            // Завантажити учасників
             let participantsLoaded = 0;
-            if (participantsStartRow >= 0) {
-                for (let i = participantsStartRow + 1; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    if (!row || row.length < 3) continue;
-                    
-                    // Якщо дійшли до секції призів, зупинитися
-                    if (i >= prizesStartRow && prizesStartRow > participantsStartRow) break;
-                    
-                    const name = row[0] ? row[0].toString().trim() : '';
-                    const division = row[1] ? row[1].toString().trim() : '';
-                    const weight = parseInt(row[2]) || 1;
-                    
-                    if (name && division && weight > 0) {
-                        participants.push({ name, division, weight });
-                        participantsLoaded++;
+            let prizesLoaded = 0;
+            
+            // НОВИЙ ПІДХІД: Імпорт з окремих листів
+            if (sheetNames.length >= 2) {
+                // Якщо є кілька листів, використовуємо окремі листи для учасників та призів
+                console.log('Знайдено кілька листів, використовуємо окремі листи для імпорту');
+                
+                // Знайти лист для учасників
+                let participantsSheetIndex = -1;
+                let prizesSheetIndex = -1;
+                
+                // Спробувати знайти листи за назвами
+                for (let i = 0; i < sheetNames.length; i++) {
+                    const sheetName = sheetNames[i].toLowerCase();
+                    if (sheetName.includes('учасник') || sheetName.includes('participant') || sheetName.includes('люди') || sheetName.includes('команда')) {
+                        participantsSheetIndex = i;
+                    }
+                    if (sheetName.includes('приз') || sheetName.includes('prize') || sheetName.includes('нагород') || sheetName.includes('подарун')) {
+                        prizesSheetIndex = i;
                     }
                 }
-            }
+                
+                // Якщо не знайшли за назвами, використовуємо перші два листи
+                if (participantsSheetIndex === -1) participantsSheetIndex = 0;
+                if (prizesSheetIndex === -1) prizesSheetIndex = 1;
+                
+                // Завантажити учасників з відповідного листа
+                if (participantsSheetIndex >= 0 && participantsSheetIndex < sheetNames.length) {
+                    const participantsSheet = workbook.Sheets[sheetNames[participantsSheetIndex]];
+                    const participantsData = XLSX.utils.sheet_to_json(participantsSheet, { header: 1 });
+                    
+                    console.log(`Завантажуємо учасників з листа: ${sheetNames[participantsSheetIndex]}`);
+                    
+                    // Знайти рядок з заголовками або почати з першого рядка
+                    let startRow = 0;
+                    for (let i = 0; i < participantsData.length; i++) {
+                        const row = participantsData[i];
+                        if (row && row.length >= 3) {
+                            const first = row[0] ? row[0].toString().toLowerCase() : '';
+                            const second = row[1] ? row[1].toString().toLowerCase() : '';
+                            const third = row[2] ? row[2].toString().toLowerCase() : '';
+                            
+                            if ((first.includes('ім') || first.includes('name')) && 
+                                (second.includes('підрозділ') || second.includes('division') || second.includes('відділ')) && 
+                                (third.includes('ваг') || third.includes('weight') || third.includes('пріоритет'))) {
+                                startRow = i + 1;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Завантажити дані учасників
+                    for (let i = startRow; i < participantsData.length; i++) {
+                        const row = participantsData[i];
+                        if (!row || row.length < 2) continue;
+                        
+                        const name = row[0] ? row[0].toString().trim() : '';
+                        const division = row[1] ? row[1].toString().trim() : '';
+                        const weight = row.length > 2 ? (parseInt(row[2]) || 1) : 1;
+                        
+                        if (name) {
+                            participants.push({ name, division, weight });
+                            participantsLoaded++;
+                        }
+                    }
+                }
+                
+                // Завантажити призи з відповідного листа
+                if (prizesSheetIndex >= 0 && prizesSheetIndex < sheetNames.length) {
+                    const prizesSheet = workbook.Sheets[sheetNames[prizesSheetIndex]];
+                    const prizesData = XLSX.utils.sheet_to_json(prizesSheet, { header: 1 });
+                    
+                    console.log(`Завантажуємо призи з листа: ${sheetNames[prizesSheetIndex]}`);
+                    
+                    // Знайти рядок з заголовками або почати з першого рядка
+                    let startRow = 0;
+                    for (let i = 0; i < prizesData.length; i++) {
+                        const row = prizesData[i];
+                        if (row && row.length >= 2) {
+                            const first = row[0] ? row[0].toString().toLowerCase() : '';
+                            const second = row[1] ? row[1].toString().toLowerCase() : '';
+                            
+                            if ((first.includes('назв') || first.includes('name') || first.includes('приз')) && 
+                                (second.includes('кільк') || second.includes('count') || second.includes('к-ст'))) {
+                                startRow = i + 1;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Завантажити дані призів
+                    for (let i = startRow; i < prizesData.length; i++) {
+                        const row = prizesData[i];
+                        if (!row || row.length < 1) continue;
+                        
+                        const name = row[0] ? row[0].toString().trim() : '';
+                        const count = row.length > 1 ? (parseInt(row[1]) || 1) : 1;
+                        
+                        if (name) {
+                            prizes.push({ name, count });
+                            prizesLoaded++;
+                        }
+                    }
+                }
+                
+            } else {
+                // СТАРИЙ ПІДХІД: Якщо тільки один лист, шукаємо дані на ньому
+                console.log('Знайдено один лист, використовуємо старий метод імпорту');
+                
+                const firstSheet = workbook.Sheets[sheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                
+                if (jsonData.length < 2) {
+                    alert('Excel файл не містить достатньо даних!');
+                    return;
+                }
 
-            // Завантажити призи
-            let prizesLoaded = 0;
-            if (prizesStartRow >= 0) {
-                for (let i = prizesStartRow + 1; i < jsonData.length; i++) {
+                // Знайти секції учасників та призів
+                let participantsStartRow = -1;
+                let prizesStartRow = -1;
+                
+                for (let i = 0; i < jsonData.length; i++) {
                     const row = jsonData[i];
-                    if (!row || row.length < 2) continue;
-                    
-                    const name = row[0] ? row[0].toString().trim() : '';
-                    const count = parseInt(row[1]) || 1;
-                    
-                    if (name && count > 0) {
-                        prizes.push({ name, count });
-                        prizesLoaded++;
+                    if (row && row.length >= 2) {
+                        // Шукаємо заголовки для учасників
+                        if ((row[0] && row[0].toString().toLowerCase().includes('ім')) && 
+                            (row[1] && row[1].toString().toLowerCase().includes('підрозділ')) &&
+                            (row[2] && row[2].toString().toLowerCase().includes('ваг'))) {
+                            participantsStartRow = i;
+                        }
+                        // Шукаємо заголовки для призів
+                        if ((row[0] && row[0].toString().toLowerCase().includes('назв')) && 
+                            (row[1] && (row[1].toString().toLowerCase().includes('кільк') || row[1].toString().toLowerCase().includes('к-сть')))) {
+                            prizesStartRow = i;
+                        }
+                    }
+                }
+
+                // Якщо не знайшли заголовки, спробуємо автоматично
+                if (participantsStartRow === -1) {
+                    // Припускаємо що перші дані - учасники
+                    participantsStartRow = 0;
+                    // Знайти де починаються призи (шукаємо пустий рядок або зміну формату)
+                    for (let i = 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length === 0 || (row[0] === '' && row[1] === '')) {
+                            prizesStartRow = i + 1;
+                            break;
+                        }
+                    }
+                }
+
+                // Завантажити учасників
+                if (participantsStartRow >= 0) {
+                    for (let i = participantsStartRow + 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length < 3) continue;
+                        
+                        // Якщо дійшли до секції призів, зупинитися
+                        if (i >= prizesStartRow && prizesStartRow > participantsStartRow) break;
+                        
+                        const name = row[0] ? row[0].toString().trim() : '';
+                        const division = row[1] ? row[1].toString().trim() : '';
+                        const weight = parseInt(row[2]) || 1;
+                        
+                        if (name && division && weight > 0) {
+                            participants.push({ name, division, weight });
+                            participantsLoaded++;
+                        }
+                    }
+                }
+
+                // Завантажити призи
+                if (prizesStartRow >= 0) {
+                    for (let i = prizesStartRow + 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || row.length < 2) continue;
+                        
+                        const name = row[0] ? row[0].toString().trim() : '';
+                        const count = parseInt(row[1]) || 1;
+                        
+                        if (name && count > 0) {
+                            prizes.push({ name, count });
+                            prizesLoaded++;
+                        }
                     }
                 }
             }
@@ -811,7 +957,19 @@ function handleExcelLoad(event) {
             initializeRaffleStats(); // Оновити статистику розіграшу
             markAsChanged();
             
-            alert(`Excel файл успішно завантажено!\nУчасників: ${participantsLoaded}\nПризів: ${prizesLoaded}`);
+            let message = 'Excel файл успішно завантажено!';
+            message += `\nУчасників: ${participantsLoaded}`;
+            message += `\nПризів: ${prizesLoaded}`;
+            
+            if (sheetNames.length >= 2) {
+                message += `\n\nВикористано окремі листи:`;
+                message += `\n• Учасники: ${sheetNames[0] || 'перший лист'}`;
+                message += `\n• Призи: ${sheetNames[1] || 'другий лист'}`;
+            } else {
+                message += '\n\nДані знайдено на одному листі';
+            }
+            
+            alert(message);
             
         } catch (error) {
             console.error('Помилка при читанні Excel файлу:', error);
@@ -1045,6 +1203,8 @@ function hideAnimationSettings() {
 function loadAnimationSettingsToForm() {
     document.getElementById('spin-duration').value = animationSettings.spinDuration;
     document.getElementById('spin-speed').value = animationSettings.spinSpeed;
+    document.getElementById('spin-rotations').value = animationSettings.spinRotations;
+    document.getElementById('easing-speed').value = animationSettings.easingSpeed;
     document.getElementById('result-highlight-duration').value = animationSettings.resultHighlightDuration;
     document.getElementById('popup-countdown-time').value = animationSettings.popupCountdownTime;
     document.getElementById('enable-sound').checked = animationSettings.enableSound;
@@ -1054,6 +1214,8 @@ function saveAnimationSettings() {
     animationSettings = {
         spinDuration: parseFloat(document.getElementById('spin-duration').value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
         spinSpeed: parseInt(document.getElementById('spin-speed').value) || DEFAULT_ANIMATION_SETTINGS.spinSpeed,
+        spinRotations: parseFloat(document.getElementById('spin-rotations').value) || DEFAULT_ANIMATION_SETTINGS.spinRotations,
+        easingSpeed: parseFloat(document.getElementById('easing-speed').value) || DEFAULT_ANIMATION_SETTINGS.easingSpeed,
         resultHighlightDuration: parseFloat(document.getElementById('result-highlight-duration').value) || DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(document.getElementById('popup-countdown-time').value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: document.getElementById('enable-sound').checked
