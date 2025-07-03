@@ -1,4 +1,10 @@
-// Глобальні змінні
+﻿/**
+ * DATA MANAGER MODULE
+ * Відповідає за управління даними, збереження та Excel операції
+ */
+
+// ===== ГЛОБАЛЬНІ ЗМІННІ ТА КОНСТАНТИ =====
+
 let participants = [];
 let prizes = [];
 let results = [];
@@ -22,29 +28,6 @@ const STORAGE_KEYS = {
     LAST_SAVE: 'raffle_last_save',
     ANIMATION_SETTINGS: 'raffle_animation_settings'
 };
-
-// Налаштування анімації за замовчуванням
-const DEFAULT_ANIMATION_SETTINGS = {
-    spinDuration: 2, // секунди - тривалість обертання барабанів
-    spinSpeed: 100, // мілісекунди - швидкість зміни елементів барабанів
-    popupRotations: 1, // кількість обертів popup при появі (можна дробові: 0.5, 1.5, тощо)
-    popupAnimationSpeed: 0.8, // швидкість наближення popup (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
-    resultHighlightDuration: 3, // секунди
-    popupCountdownTime: 10, // секунди
-    enableSound: false
-};
-
-let animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
-
-// Ініціалізація
-document.addEventListener('DOMContentLoaded', function() {
-    loadFromStorage();
-    loadAnimationSettings(); // Завантажити налаштування анімації
-    updateDisplay();
-    updateResultsDisplay(); // Оновити результати при завантаженні
-    setupAutoSave();
-    setupBeforeUnload();
-});
 
 // ===== ФУНКЦІЇ ЛОКАЛЬНОГО ЗБЕРЕЖЕННЯ =====
 
@@ -145,15 +128,6 @@ function loadFromStorage() {
             }, 100); // Невелика затримка для завантаження DOM
         }
 
-        // Ініціалізувати статистику для сторінки розіграшу
-        if (isRaffleActive) {
-            // Якщо розіграш активний, показуємо поточний стан
-            setTimeout(() => updateRaffleStats(), 50);
-        } else {
-            // Якщо розіграш не активний, показуємо загальну статистику
-            setTimeout(() => initializeRaffleStats(), 50);
-        }
-
         const lastSave = localStorage.getItem(STORAGE_KEYS.LAST_SAVE);
         if (lastSave) {
             const saveDate = new Date(lastSave);
@@ -215,18 +189,25 @@ function clearStoredData() {
         availableParticipants = [];
         availablePrizes = [];
         
-        // Оновити всі сторінки
-        updateDisplay();
-        initializeRaffleStats();
-        updateResultsDisplay();
+        // Оновити всі сторінки (функції з ui-controller)
+        if (typeof updateDisplay === 'function') updateDisplay();
+        if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
+        if (typeof updateResultsDisplay === 'function') updateResultsDisplay();
         
         // Скинути інтерфейс розіграшу
-        document.getElementById('participant-drum').textContent = 'Готовий до розіграшу!';
-        document.getElementById('prize-drum').textContent = 'Готовий до розіграшу!';
-        document.getElementById('start-raffle-btn').style.display = 'inline-block';
-        document.getElementById('next-round-btn').style.display = 'none';
-        document.getElementById('new-raffle-btn').style.display = 'none';
-        document.getElementById('raffle-message').innerHTML = '';
+        const participantDrum = document.getElementById('participant-drum');
+        const prizeDrum = document.getElementById('prize-drum');
+        const startBtn = document.getElementById('start-raffle-btn');
+        const nextBtn = document.getElementById('next-round-btn');
+        const newBtn = document.getElementById('new-raffle-btn');
+        const raffleMessage = document.getElementById('raffle-message');
+        
+        if (participantDrum) participantDrum.textContent = 'Готовий до розіграшу!';
+        if (prizeDrum) prizeDrum.textContent = 'Готовий до розіграшу!';
+        if (startBtn) startBtn.style.display = 'inline-block';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (newBtn) newBtn.style.display = 'none';
+        if (raffleMessage) raffleMessage.innerHTML = '';
         
         alert('Всі збережені дані видалено! Резервна копія створена.');
     }
@@ -258,6 +239,8 @@ function setupBeforeUnload() {
 
 function showAutoSaveStatus(status) {
     const indicator = document.getElementById('auto-save-indicator');
+    if (!indicator) return;
+    
     indicator.className = `auto-save-indicator ${status}`;
     
     switch (status) {
@@ -298,50 +281,7 @@ function markAsChanged() {
     }, 2000);
 }
 
-// ===== НАВІГАЦІЯ =====
-
-function showPage(pageId) {
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    
-    document.getElementById(pageId + '-page').classList.add('active');
-    event.target.classList.add('active');
-    
-    if (pageId === 'raffle') {
-        // Якщо розіграш не активний, показуємо загальну статистику
-        if (!isRaffleActive) {
-            initializeRaffleStats();
-        } else {
-            updateRaffleStats();
-        }
-    } else if (pageId === 'results') {
-        updateResultsDisplay();
-    }
-}
-
-// ===== СТАТИСТИКА =====
-
-// Ініціалізація статистики для сторінки розіграшу
-function initializeRaffleStats() {
-    // Показуємо загальну кількість доступних учасників та призів
-    const totalParticipants = participants.length;
-    let totalPrizes = 0;
-    prizes.forEach(prize => {
-        totalPrizes += prize.count;
-    });
-    
-    document.getElementById('total-participants').textContent = totalParticipants;
-    document.getElementById('total-prizes').textContent = totalPrizes;
-    document.getElementById('current-round').textContent = currentRound;
-}
-
-function updateRaffleStats() {
-    document.getElementById('total-participants').textContent = availableParticipants.length;
-    document.getElementById('total-prizes').textContent = availablePrizes.length;
-    document.getElementById('current-round').textContent = currentRound;
-}
-
-// ===== УЧАСНИКИ =====
+// ===== УПРАВЛІННЯ УЧАСНИКАМИ =====
 
 function addParticipant() {
     const name = document.getElementById('participant-name').value.trim();
@@ -349,349 +289,93 @@ function addParticipant() {
     const weight = parseInt(document.getElementById('participant-weight').value);
     const errorDiv = document.getElementById('participants-error');
 
-    errorDiv.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'none';
 
     if (!name) {
-        showError('participants-error', 'Введіть ім\'я учасника');
+        if (typeof showError === 'function') showError('participants-error', 'Введіть ім\'я учасника');
         return;
     }
 
     if (!division) {
-        showError('participants-error', 'Введіть підрозділ');
+        if (typeof showError === 'function') showError('participants-error', 'Введіть підрозділ');
         return;
     }
 
     if (!weight || weight < 1) {
-        showError('participants-error', 'Вага повинна бути більше 0');
+        if (typeof showError === 'function') showError('participants-error', 'Вага повинна бути більше 0');
         return;
     }
 
     if (participants.some(p => p.name === name)) {
-        showError('participants-error', 'Учасник з таким ім\'ям вже існує');
+        if (typeof showError === 'function') showError('participants-error', 'Учасник з таким ім\'ям вже існує');
         return;
     }
 
     participants.push({ name, division, weight });
-    document.getElementById('participant-name').value = '';
-    document.getElementById('participant-division').value = '';
-    document.getElementById('participant-weight').value = '1';
-    updateDisplay();
-    initializeRaffleStats(); // Оновити статистику розіграшу
+    
+    // Очистити форму
+    const nameInput = document.getElementById('participant-name');
+    const divisionInput = document.getElementById('participant-division');
+    const weightInput = document.getElementById('participant-weight');
+    
+    if (nameInput) nameInput.value = '';
+    if (divisionInput) divisionInput.value = '';
+    if (weightInput) weightInput.value = '1';
+    
+    // Оновити відображення
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
     markAsChanged();
 }
 
 function removeParticipant(index) {
     if (confirm('Видалити цього учасника?')) {
         participants.splice(index, 1);
-        updateDisplay();
-        initializeRaffleStats(); // Оновити статистику розіграшу
+        if (typeof updateDisplay === 'function') updateDisplay();
+        if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         markAsChanged();
     }
 }
 
-// ===== ПРИЗИ =====
+// ===== УПРАВЛІННЯ ПРИЗАМИ =====
 
 function addPrize() {
     const name = document.getElementById('prize-name').value.trim();
     const count = parseInt(document.getElementById('prize-count').value);
     const errorDiv = document.getElementById('prizes-error');
 
-    errorDiv.style.display = 'none';
+    if (errorDiv) errorDiv.style.display = 'none';
 
     if (!name) {
-        showError('prizes-error', 'Введіть назву призу');
+        if (typeof showError === 'function') showError('prizes-error', 'Введіть назву призу');
         return;
     }
 
     if (!count || count < 1) {
-        showError('prizes-error', 'Кількість повинна бути більше 0');
+        if (typeof showError === 'function') showError('prizes-error', 'Кількість повинна бути більше 0');
         return;
     }
 
     prizes.push({ name, count });
-    document.getElementById('prize-name').value = '';
-    document.getElementById('prize-count').value = '1';
-    updateDisplay();
-    initializeRaffleStats(); // Оновити статистику розіграшу
+    
+    // Очистити форму
+    const nameInput = document.getElementById('prize-name');
+    const countInput = document.getElementById('prize-count');
+    
+    if (nameInput) nameInput.value = '';
+    if (countInput) countInput.value = '1';
+    
+    // Оновити відображення
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
     markAsChanged();
 }
 
 function removePrize(index) {
     if (confirm('Видалити цей приз?')) {
         prizes.splice(index, 1);
-        updateDisplay();
-        initializeRaffleStats(); // Оновити статистику розіграшу
-        markAsChanged();
-    }
-}
-
-// ===== ВІДОБРАЖЕННЯ =====
-
-function showError(elementId, message) {
-    const errorDiv = document.getElementById(elementId);
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-}
-
-function updateDisplay() {
-    updateParticipantsList();
-    updatePrizesList();
-}
-
-function updateParticipantsList() {
-    const tbody = document.getElementById('participants-list');
-    tbody.innerHTML = '';
-
-    participants.forEach((participant, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${participant.name}</td>
-            <td>${participant.division || 'Не вказано'}</td>
-            <td>${participant.weight}</td>
-            <td>
-                <button class="btn btn-danger" onclick="removeParticipant(${index})">Видалити</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function updatePrizesList() {
-    const tbody = document.getElementById('prizes-list');
-    tbody.innerHTML = '';
-
-    prizes.forEach((prize, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${prize.name}</td>
-            <td>${prize.count}</td>
-            <td>
-                <button class="btn btn-danger" onclick="removePrize(${index})">Видалити</button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// ===== РОЗІГРАШ =====
-
-function startRaffle() {
-    if (participants.length === 0) {
-        alert('Додайте учасників для розіграшу!');
-        return;
-    }
-
-    if (prizes.length === 0) {
-        alert('Додайте призи для розіграшу!');
-        return;
-    }
-
-    // Ініціалізація розіграшу
-    availableParticipants = [...participants];
-    availablePrizes = [];
-    
-    // Розгорнути призи за кількістю
-    prizes.forEach(prize => {
-        for (let i = 0; i < prize.count; i++) {
-            availablePrizes.push(prize.name);
-        }
-    });
-
-    results = [];
-    currentRound = 0;
-    isRaffleActive = true;
-
-    document.getElementById('start-raffle-btn').style.display = 'none';
-    updateRaffleStats();
-    markAsChanged(); // Зберегти початок розіграшу
-    nextRound();
-}
-
-function nextRound() {
-    if (availableParticipants.length === 0 || availablePrizes.length === 0) {
-        endRaffle();
-        return;
-    }
-
-    currentRound++;
-    updateRaffleStats();
-
-    // Анімація барабанів
-    const participantDrum = document.getElementById('participant-drum');
-    const prizeDrum = document.getElementById('prize-drum');
-
-    participantDrum.classList.add('spinning');
-    prizeDrum.classList.add('spinning');
-
-    // Показати випадкові імена під час обертання
-    const spinInterval = setInterval(() => {
-        participantDrum.textContent = availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name;
-        prizeDrum.textContent = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
-    }, animationSettings.spinSpeed);
-
-    // Зупинити через налаштований час і показати результат
-    setTimeout(() => {
-        clearInterval(spinInterval);
-        
-        // Вибір переможця з урахуванням ваги
-        const winner = selectWeightedRandom(availableParticipants);
-        const prizeIndex = Math.floor(Math.random() * availablePrizes.length);
-        const wonPrize = availablePrizes[prizeIndex];
-
-        participantDrum.textContent = winner.name;
-        prizeDrum.textContent = wonPrize;
-
-        participantDrum.classList.remove('spinning');
-        prizeDrum.classList.remove('spinning');
-
-        // Додати легкий ефект підсвічування результату
-        participantDrum.classList.add('result-highlight');
-        prizeDrum.classList.add('result-highlight');
-        
-        // Прибрати підсвічування через налаштований час
-        setTimeout(() => {
-            participantDrum.classList.remove('result-highlight');
-            prizeDrum.classList.remove('result-highlight');
-        }, animationSettings.resultHighlightDuration * 1000);
-
-        // Зберегти результат
-        results.push({
-            round: currentRound,
-            winner: winner.name,
-            winnerDivision: winner.division,
-            prize: wonPrize
-        });
-
-        // Показати popup з привітанням переможця після короткої паузи
-        setTimeout(() => {
-            showWinnerPopup(winner.name, winner.division, wonPrize);
-        }, 1000); // Пауза 1 секунда для осмислення результату
-
-        // Видалити переможця та приз
-        availableParticipants = availableParticipants.filter(p => p.name !== winner.name);
-        availablePrizes.splice(prizeIndex, 1);
-
-        updateRaffleStats();
-        markAsChanged(); // Зберегти поточний стан
-
-        // Показати кнопку наступного раунду або завершення
-        if (availableParticipants.length > 0 && availablePrizes.length > 0) {
-            document.getElementById('next-round-btn').style.display = 'inline-block';
-            document.getElementById('raffle-message').innerHTML = 
-                `🎉 <strong>${winner.name}</strong> виграв <strong>${wonPrize}</strong>!<br>Натисніть "Наступний раунд" для продовження.`;
-        } else {
-            endRaffle();
-        }
-    }, animationSettings.spinDuration * 1000);
-
-    document.getElementById('next-round-btn').style.display = 'none';
-}
-
-function selectWeightedRandom(participants) {
-    const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
-    let random = Math.random() * totalWeight;
-
-    for (const participant of participants) {
-        random -= participant.weight;
-        if (random <= 0) {
-            return participant;
-        }
-    }
-
-    return participants[participants.length - 1];
-}
-
-function endRaffle() {
-    isRaffleActive = false;
-    document.getElementById('next-round-btn').style.display = 'none';
-    document.getElementById('start-raffle-btn').style.display = 'none';
-    document.getElementById('new-raffle-btn').style.display = 'inline-block';
-    document.getElementById('raffle-message').innerHTML = 
-        `🎊 <strong>Розіграш завершено!</strong><br>Перейдіть на сторінку результатів для перегляду переможців.`;
-    
-    markAsChanged(); // Зберегти завершений стан
-    saveToStorage(); // Автоматично зберегти результати
-}
-
-function startNewRaffle() {
-    if (confirm('Розпочати новий розіграш? Попередні результати будуть збережені.')) {
-        // Скидаємо тільки поточний стан розіграшу, але зберігаємо результати
-        currentRound = 0;
-        isRaffleActive = false;
-        availableParticipants = [];
-        availablePrizes = [];
-        
-        document.getElementById('participant-drum').textContent = 'Готовий до розіграшу!';
-        document.getElementById('prize-drum').textContent = 'Готовий до розіграшу!';
-        document.getElementById('start-raffle-btn').style.display = 'inline-block';
-        document.getElementById('next-round-btn').style.display = 'none';
-        document.getElementById('new-raffle-btn').style.display = 'none';
-        document.getElementById('raffle-message').innerHTML = '';
-        
-        initializeRaffleStats(); // Оновити статистику
-        markAsChanged(); // Зберегти новий стан
-    }
-}
-
-function resetRaffle() {
-    if (!confirm('Ви впевнені, що хочете скинути розіграш? Всі поточні результати будуть втрачені.')) {
-        return;
-    }
-
-    createBackup(); // Створюємо резервну копію перед скиданням
-
-    currentRound = 0;
-    isRaffleActive = false;
-    availableParticipants = [];
-    availablePrizes = [];
-    results = [];
-    
-    document.getElementById('participant-drum').textContent = 'Готовий до розіграшу!';
-    document.getElementById('prize-drum').textContent = 'Готовий до розіграшу!';
-    document.getElementById('start-raffle-btn').style.display = 'inline-block';
-    document.getElementById('next-round-btn').style.display = 'none';
-    document.getElementById('new-raffle-btn').style.display = 'none';
-    document.getElementById('raffle-message').innerHTML = '';
-    
-    initializeRaffleStats(); // Оновити статистику (показати загальну кількість)
-    updateResultsDisplay(); // Оновити результати
-    markAsChanged();
-}
-
-// ===== РЕЗУЛЬТАТИ =====
-
-function updateResultsDisplay() {
-    document.getElementById('results-total-rounds').textContent = results.length;
-    document.getElementById('results-winners').textContent = new Set(results.map(r => r.winner)).size;
-    document.getElementById('results-prizes-given').textContent = results.length;
-
-    const resultsList = document.getElementById('results-list');
-    
-    if (results.length === 0) {
-        resultsList.innerHTML = '<p style="text-align: center; color: #666;">Результати з\'являться після проведення розіграшу</p>';
-        return;
-    }
-
-    resultsList.innerHTML = results.map(result => `
-        <div class="result-item">
-            <span class="round-indicator">Раунд ${result.round}</span>
-            <strong>${result.winner}</strong>${result.winnerDivision ? ` (Підрозділ: ${result.winnerDivision})` : ''} виграв <strong>${result.prize}</strong>
-        </div>
-    `).join('');
-}
-
-function clearResults() {
-    if (results.length === 0) {
-        alert('Результати вже порожні!');
-        return;
-    }
-
-    if (confirm('Ви впевнені, що хочете очистити всі результати?')) {
-        createBackup(); // Створюємо резервну копію
-        results = [];
-        currentRound = 0; // Скинути лічильник раундів
-        updateResultsDisplay();
-        initializeRaffleStats(); // Оновити статистику
+        if (typeof updateDisplay === 'function') updateDisplay();
+        if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         markAsChanged();
     }
 }
@@ -699,7 +383,8 @@ function clearResults() {
 // ===== EXCEL ФУНКЦІЇ =====
 
 function loadExcelData() {
-    document.getElementById('excel-input').click();
+    const input = document.getElementById('excel-input');
+    if (input) input.click();
 }
 
 function handleExcelLoad(event) {
@@ -917,8 +602,9 @@ function handleExcelLoad(event) {
                 }
             }
 
-            updateDisplay();
-            initializeRaffleStats(); // Оновити статистику розіграшу
+            // Оновити відображення
+            if (typeof updateDisplay === 'function') updateDisplay();
+            if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
             markAsChanged();
             
             let message = 'Excel файл успішно завантажено!';
@@ -1045,222 +731,87 @@ function exportResultsToExcel() {
     XLSX.writeFile(wb, fileName);
 }
 
-// ===== ОБРОБНИКИ ПОДІЙ =====
+// ===== ФУНКЦІЇ ОЧИЩЕННЯ РЕЗУЛЬТАТІВ =====
 
-// Обробка Enter для форм
-document.getElementById('participant-name').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') addParticipant();
-});
-
-document.getElementById('participant-division').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') addParticipant();
-});
-
-document.getElementById('participant-weight').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') addParticipant();
-});
-
-document.getElementById('prize-name').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') addPrize();
-});
-
-document.getElementById('prize-count').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') addPrize();
-});
-
-// ===== POPUP ПЕРЕМОЖЦЯ =====
-
-let popupCountdownInterval = null;
-let popupAutoCloseTimeout = null;
-
-function showWinnerPopup(winnerName, winnerDivision, prizeName) {
-    const popup = document.getElementById('winner-popup');
-    const popupContent = popup.querySelector('.popup-content');
-    const winnerNameEl = document.getElementById('winner-name');
-    const winnerDivisionEl = document.getElementById('winner-division');
-    const winnerPrizeEl = document.getElementById('winner-prize');
-    const countdownTimer = document.getElementById('countdown-timer');
-    
-    // Оновити інформацію про переможця
-    winnerNameEl.textContent = winnerName;
-    winnerDivisionEl.textContent = winnerDivision || 'Не вказано';
-    winnerPrizeEl.textContent = prizeName;
-    
-    // Показати popup
-    popup.style.display = 'flex';
-    
-    // Застосувати динамічну анімацію на основі налаштувань
-    const rotations = animationSettings.popupRotations;
-    const animationSpeed = animationSettings.popupAnimationSpeed;
-    const duration = 0.5 + (1.5 / animationSpeed); // Від 0.5 до 2 секунд залежно від швидкості
-    
-    // Розрахувати початкову та кінцеву позицію
-    const totalRotationDegrees = rotations * 360;
-    const startRotation = -(totalRotationDegrees % 360);
-    
-    // Очистити попередні анімації
-    popupContent.style.animation = 'none';
-    popupContent.style.transform = `scale(0.1) rotate(${startRotation}deg)`;
-    popupContent.style.opacity = '0';
-    
-    // Додати нову просту анімацію
-    setTimeout(() => {
-        // Створити простіші keyframes тільки з початком і кінцем
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = `
-            @keyframes smoothPopupAppear {
-                0% {
-                    transform: scale(0.1) rotate(${startRotation}deg);
-                    opacity: 0;
-                }
-                100% {
-                    transform: scale(1) rotate(0deg);
-                    opacity: 1;
-                }
-            }
-        `;
-        
-        // Видалити попередні стилі та додати нові
-        const oldStyle = document.getElementById('dynamic-popup-style');
-        if (oldStyle) oldStyle.remove();
-        
-        styleSheet.id = 'dynamic-popup-style';
-        document.head.appendChild(styleSheet);
-        
-        // Застосувати анімацію
-        const easingFunction = animationSpeed > 0.5 ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'ease-out';
-        popupContent.style.animation = `smoothPopupAppear ${duration}s ${easingFunction} forwards`;
-        
-        // Очистити анімацію після завершення
-        setTimeout(() => {
-            popupContent.style.animation = 'none';
-            popupContent.style.transform = 'scale(1) rotate(0deg)';
-            popupContent.style.opacity = '1';
-        }, duration * 1000 + 50);
-    }, 50);
-    
-    // Запустити countdown таймер
-    let timeLeft = animationSettings.popupCountdownTime;
-    countdownTimer.textContent = timeLeft;
-    
-    popupCountdownInterval = setInterval(() => {
-        timeLeft--;
-        countdownTimer.textContent = timeLeft;
-        
-        if (timeLeft <= 0) {
-            clearInterval(popupCountdownInterval);
-        }
-    }, 1000);
-    
-    // Автоматично сховати через налаштований час
-    popupAutoCloseTimeout = setTimeout(() => {
-        hideWinnerPopup();
-    }, animationSettings.popupCountdownTime * 1000);
-}
-
-function hideWinnerPopup() {
-    const popup = document.getElementById('winner-popup');
-    
-    // Очистити всі таймери
-    if (popupCountdownInterval) {
-        clearInterval(popupCountdownInterval);
-        popupCountdownInterval = null;
+function clearResults() {
+    if (results.length === 0) {
+        alert('Результати вже порожні!');
+        return;
     }
-    
-    if (popupAutoCloseTimeout) {
-        clearTimeout(popupAutoCloseTimeout);
-        popupAutoCloseTimeout = null;
-    }
-    
-    // Сховати popup
-    popup.style.display = 'none';
-}
 
-// Закрити popup при кліку на overlay та при натисканні Escape
-document.addEventListener('DOMContentLoaded', function() {
-    const popup = document.getElementById('winner-popup');
-    if (popup) {
-        const overlay = popup.querySelector('.popup-overlay');
-        
-        if (overlay) {
-            overlay.addEventListener('click', hideWinnerPopup);
-        }
-        
-        // Закрити popup при натисканні Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && popup.style.display === 'flex') {
-                hideWinnerPopup();
-            }
-        });
-    }
-});
-
-// ===== НАЛАШТУВАННЯ АНІМАЦІЇ =====
-
-function showAnimationSettings() {
-    // Приховати всі сторінки
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-    
-    // Показати сторінку налаштувань
-    document.getElementById('animation-settings-page').classList.add('active');
-    
-    // Завантажити поточні налаштування
-    loadAnimationSettingsToForm();
-}
-
-function hideAnimationSettings() {
-    document.getElementById('animation-settings-page').classList.remove('active');
-    // Повернутися на сторінку даних
-    showPage('data');
-}
-
-function loadAnimationSettingsToForm() {
-    document.getElementById('spin-duration').value = animationSettings.spinDuration;
-    document.getElementById('spin-speed').value = animationSettings.spinSpeed;
-    document.getElementById('popup-rotations').value = animationSettings.popupRotations;
-    document.getElementById('popup-animation-speed').value = animationSettings.popupAnimationSpeed;
-    document.getElementById('result-highlight-duration').value = animationSettings.resultHighlightDuration;
-    document.getElementById('popup-countdown-time').value = animationSettings.popupCountdownTime;
-    document.getElementById('enable-sound').checked = animationSettings.enableSound;
-}
-
-function saveAnimationSettings() {
-    animationSettings = {
-        spinDuration: parseFloat(document.getElementById('spin-duration').value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
-        spinSpeed: parseInt(document.getElementById('spin-speed').value) || DEFAULT_ANIMATION_SETTINGS.spinSpeed,
-        popupRotations: parseFloat(document.getElementById('popup-rotations').value) || DEFAULT_ANIMATION_SETTINGS.popupRotations,
-        popupAnimationSpeed: parseFloat(document.getElementById('popup-animation-speed').value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
-        resultHighlightDuration: parseFloat(document.getElementById('result-highlight-duration').value) || DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
-        popupCountdownTime: parseInt(document.getElementById('popup-countdown-time').value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
-        enableSound: document.getElementById('enable-sound').checked
-    };
-    
-    // Зберегти в localStorage
-    localStorage.setItem(STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
-    
-    alert('Налаштування анімації збережено!');
-}
-
-function resetAnimationSettings() {
-    if (confirm('Скинути всі налаштування анімації на значення за замовчуванням?')) {
-        animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
-        localStorage.setItem(STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
-        loadAnimationSettingsToForm();
-        alert('Налаштування скинуто на значення за замовчуванням!');
+    if (confirm('Ви впевнені, що хочете очистити всі результати?')) {
+        createBackup(); // Створюємо резервну копію
+        results = [];
+        currentRound = 0; // Скинути лічильник раундів
+        if (typeof updateResultsDisplay === 'function') updateResultsDisplay();
+        if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
+        markAsChanged();
     }
 }
 
-function loadAnimationSettings() {
-    try {
-        const savedSettings = localStorage.getItem(STORAGE_KEYS.ANIMATION_SETTINGS);
-        if (savedSettings) {
-            animationSettings = { ...DEFAULT_ANIMATION_SETTINGS, ...JSON.parse(savedSettings) };
-        } else {
-            animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
-        }
-    } catch (error) {
-        console.error('Помилка завантаження налаштувань анімації:', error);
-        animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
-    }
-}
+// ===== ЕКСПОРТ ФУНКЦІЙ ДЛЯ ГЛОБАЛЬНОГО ДОСТУПУ =====
+
+// Зробити функції доступними глобально для використання в інших модулях та HTML
+window.DataManager = {
+    // Змінні
+    get participants() { return participants; },
+    set participants(value) { participants = value; },
+    get prizes() { return prizes; },
+    set prizes(value) { prizes = value; },
+    get results() { return results; },
+    set results(value) { results = value; },
+    get availableParticipants() { return availableParticipants; },
+    set availableParticipants(value) { availableParticipants = value; },
+    get availablePrizes() { return availablePrizes; },
+    set availablePrizes(value) { availablePrizes = value; },
+    get currentRound() { return currentRound; },
+    set currentRound(value) { currentRound = value; },
+    get isRaffleActive() { return isRaffleActive; },
+    set isRaffleActive(value) { isRaffleActive = value; },
+    get hasUnsavedChanges() { return hasUnsavedChanges; },
+    set hasUnsavedChanges(value) { hasUnsavedChanges = value; },
+    
+    // Константи
+    STORAGE_KEYS,
+    
+    // Функції
+    saveToStorage,
+    loadFromStorage,
+    createBackup,
+    clearStoredData,
+    setupAutoSave,
+    setupBeforeUnload,
+    showAutoSaveStatus,
+    markAsChanged,
+    addParticipant,
+    removeParticipant,
+    addPrize,
+    removePrize,
+    loadExcelData,
+    handleExcelLoad,
+    exportToExcel,
+    exportResultsToExcel,
+    clearResults
+};
+
+// Також зробити функції доступними напряму для обратної сумісності
+window.participants = () => participants;
+window.prizes = () => prizes;
+window.results = () => results;
+window.availableParticipants = () => availableParticipants;
+window.availablePrizes = () => availablePrizes;
+window.currentRound = () => currentRound;
+window.isRaffleActive = () => isRaffleActive;
+window.saveToStorage = saveToStorage;
+window.loadFromStorage = loadFromStorage;
+window.markAsChanged = markAsChanged;
+window.addParticipant = addParticipant;
+window.removeParticipant = removeParticipant;
+window.addPrize = addPrize;
+window.removePrize = removePrize;
+window.loadExcelData = loadExcelData;
+window.handleExcelLoad = handleExcelLoad;
+window.exportToExcel = exportToExcel;
+window.exportResultsToExcel = exportResultsToExcel;
+window.clearStoredData = clearStoredData;
+window.clearResults = clearResults;
