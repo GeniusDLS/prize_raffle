@@ -25,10 +25,10 @@ const STORAGE_KEYS = {
 
 // Налаштування анімації за замовчуванням
 const DEFAULT_ANIMATION_SETTINGS = {
-    spinDuration: 2, // секунди
-    spinSpeed: 100, // мілісекунди
-    spinRotations: 3, // кількість повних обертів (можна дробові: 0.5, 1.5, тощо)
-    easingSpeed: 0.8, // швидкість наближення (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
+    spinDuration: 2, // секунди - тривалість обертання барабанів
+    spinSpeed: 100, // мілісекунди - швидкість зміни елементів барабанів
+    popupRotations: 1, // кількість обертів popup при появі (можна дробові: 0.5, 1.5, тощо)
+    popupAnimationSpeed: 0.8, // швидкість наближення popup (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
     resultHighlightDuration: 3, // секунди
     popupCountdownTime: 10, // секунди
     enableSound: false
@@ -507,49 +507,6 @@ function startRaffle() {
     nextRound();
 }
 
-// Нова функція для складної анімації з обертами та сповільненням
-function animateSpinWheels(participantDrum, prizeDrum, availableParticipants, availablePrizes, callback) {
-    const rotations = animationSettings.spinRotations; // Кількість обертів
-    const duration = animationSettings.spinDuration * 1000; // Тривалість в мс
-    const baseSpeed = animationSettings.spinSpeed; // Базова швидкість
-    const easingSpeed = animationSettings.easingSpeed; // Швидкість наближення (0.1-1.0)
-    
-    // Розрахунок загальної кількості змін на основі обертів
-    const totalChanges = Math.max(10, Math.floor(rotations * 20)); // Мінімум 10 змін, максимум залежить від обертів
-    
-    let currentChange = 0;
-    let lastChangeTime = Date.now();
-    let currentInterval = baseSpeed;
-    
-    const performNextChange = () => {
-        if (currentChange >= totalChanges) {
-            callback(); // Завершення анімації
-            return;
-        }
-        
-        // Оновлення значень барабанів
-        participantDrum.textContent = availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name;
-        prizeDrum.textContent = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
-        
-        currentChange++;
-        
-        // Розрахунок прогресу (0 до 1)
-        const progress = currentChange / totalChanges;
-        
-        // Використовуємо ease-out функцію для плавного сповільнення
-        const easingFactor = Math.pow(progress, easingSpeed);
-        
-        // Збільшуємо інтервал для сповільнення
-        currentInterval = baseSpeed * (1 + easingFactor * 4); // Максимальне сповільнення в 5 разів
-        
-        // Плануємо наступну зміну
-        setTimeout(performNextChange, currentInterval);
-    };
-    
-    // Починаємо анімацію
-    performNextChange();
-}
-
 function nextRound() {
     if (availableParticipants.length === 0 || availablePrizes.length === 0) {
         endRaffle();
@@ -566,8 +523,15 @@ function nextRound() {
     participantDrum.classList.add('spinning');
     prizeDrum.classList.add('spinning');
 
-    // Запуск нової складної анімації з обертами та сповільненням
-    animateSpinWheels(participantDrum, prizeDrum, availableParticipants, availablePrizes, () => {
+    // Показати випадкові імена під час обертання
+    const spinInterval = setInterval(() => {
+        participantDrum.textContent = availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name;
+        prizeDrum.textContent = availablePrizes[Math.floor(Math.random() * availablePrizes.length)];
+    }, animationSettings.spinSpeed);
+
+    // Зупинити через налаштований час і показати результат
+    setTimeout(() => {
+        clearInterval(spinInterval);
         
         // Вибір переможця з урахуванням ваги
         const winner = selectWeightedRandom(availableParticipants);
@@ -618,7 +582,7 @@ function nextRound() {
         } else {
             endRaffle();
         }
-    }); // Кінець callback функції animateSpinWheels
+    }, animationSettings.spinDuration * 1000);
 
     document.getElementById('next-round-btn').style.display = 'none';
 }
@@ -1111,6 +1075,7 @@ let popupAutoCloseTimeout = null;
 
 function showWinnerPopup(winnerName, winnerDivision, prizeName) {
     const popup = document.getElementById('winner-popup');
+    const popupContent = popup.querySelector('.popup-content');
     const winnerNameEl = document.getElementById('winner-name');
     const winnerDivisionEl = document.getElementById('winner-division');
     const winnerPrizeEl = document.getElementById('winner-prize');
@@ -1123,6 +1088,56 @@ function showWinnerPopup(winnerName, winnerDivision, prizeName) {
     
     // Показати popup
     popup.style.display = 'flex';
+    
+    // Застосувати динамічну анімацію на основі налаштувань
+    const rotations = animationSettings.popupRotations;
+    const animationSpeed = animationSettings.popupAnimationSpeed;
+    const duration = 0.5 + (1.5 / animationSpeed); // Від 0.5 до 2 секунд залежно від швидкості
+    
+    // Розрахувати початкову та кінцеву позицію
+    const totalRotationDegrees = rotations * 360;
+    const startRotation = -(totalRotationDegrees % 360);
+    
+    // Очистити попередні анімації
+    popupContent.style.animation = 'none';
+    popupContent.style.transform = `scale(0.1) rotate(${startRotation}deg)`;
+    popupContent.style.opacity = '0';
+    
+    // Додати нову просту анімацію
+    setTimeout(() => {
+        // Створити простіші keyframes тільки з початком і кінцем
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = `
+            @keyframes smoothPopupAppear {
+                0% {
+                    transform: scale(0.1) rotate(${startRotation}deg);
+                    opacity: 0;
+                }
+                100% {
+                    transform: scale(1) rotate(0deg);
+                    opacity: 1;
+                }
+            }
+        `;
+        
+        // Видалити попередні стилі та додати нові
+        const oldStyle = document.getElementById('dynamic-popup-style');
+        if (oldStyle) oldStyle.remove();
+        
+        styleSheet.id = 'dynamic-popup-style';
+        document.head.appendChild(styleSheet);
+        
+        // Застосувати анімацію
+        const easingFunction = animationSpeed > 0.5 ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'ease-out';
+        popupContent.style.animation = `smoothPopupAppear ${duration}s ${easingFunction} forwards`;
+        
+        // Очистити анімацію після завершення
+        setTimeout(() => {
+            popupContent.style.animation = 'none';
+            popupContent.style.transform = 'scale(1) rotate(0deg)';
+            popupContent.style.opacity = '1';
+        }, duration * 1000 + 50);
+    }, 50);
     
     // Запустити countdown таймер
     let timeLeft = animationSettings.popupCountdownTime;
@@ -1203,8 +1218,8 @@ function hideAnimationSettings() {
 function loadAnimationSettingsToForm() {
     document.getElementById('spin-duration').value = animationSettings.spinDuration;
     document.getElementById('spin-speed').value = animationSettings.spinSpeed;
-    document.getElementById('spin-rotations').value = animationSettings.spinRotations;
-    document.getElementById('easing-speed').value = animationSettings.easingSpeed;
+    document.getElementById('popup-rotations').value = animationSettings.popupRotations;
+    document.getElementById('popup-animation-speed').value = animationSettings.popupAnimationSpeed;
     document.getElementById('result-highlight-duration').value = animationSettings.resultHighlightDuration;
     document.getElementById('popup-countdown-time').value = animationSettings.popupCountdownTime;
     document.getElementById('enable-sound').checked = animationSettings.enableSound;
@@ -1214,8 +1229,8 @@ function saveAnimationSettings() {
     animationSettings = {
         spinDuration: parseFloat(document.getElementById('spin-duration').value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
         spinSpeed: parseInt(document.getElementById('spin-speed').value) || DEFAULT_ANIMATION_SETTINGS.spinSpeed,
-        spinRotations: parseFloat(document.getElementById('spin-rotations').value) || DEFAULT_ANIMATION_SETTINGS.spinRotations,
-        easingSpeed: parseFloat(document.getElementById('easing-speed').value) || DEFAULT_ANIMATION_SETTINGS.easingSpeed,
+        popupRotations: parseFloat(document.getElementById('popup-rotations').value) || DEFAULT_ANIMATION_SETTINGS.popupRotations,
+        popupAnimationSpeed: parseFloat(document.getElementById('popup-animation-speed').value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
         resultHighlightDuration: parseFloat(document.getElementById('result-highlight-duration').value) || DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(document.getElementById('popup-countdown-time').value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: document.getElementById('enable-sound').checked
