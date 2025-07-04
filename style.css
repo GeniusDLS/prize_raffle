@@ -198,12 +198,12 @@ body {
 .data-table th {
     background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
     color: white;
-    padding: 15px;
+    padding: 10px 15px;
     text-align: left;
 }
 
 .data-table td {
-    padding: 12px 15px;
+    padding: 8px 15px;
     border-bottom: 1px solid #eee;
 }
 
