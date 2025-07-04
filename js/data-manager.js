@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DATA MANAGER MODULE
  * Відповідає за управління даними, збереження та Excel операції
  */
@@ -141,8 +141,39 @@ function loadFromStorage() {
         }
 
         hasUnsavedChanges = false;
+        
+        // Додаткова перевірка для відновлення стану кнопки "наступний раунд"
+        // після оновлення сторінки під час активного розіграшу
+        setTimeout(() => {
+            restoreRaffleButtonState();
+        }, 200); // Затримка для завантаження DOM
+        
     } catch (error) {
         console.error('Помилка завантаження:', error);
+    }
+}
+
+// Функція для відновлення правильного стану кнопок розіграшу
+function restoreRaffleButtonState() {
+    if (!isRaffleActive) return;
+    
+    const startBtn = document.getElementById('start-raffle-btn');
+    const nextBtn = document.getElementById('next-round-btn');
+    const newBtn = document.getElementById('new-raffle-btn');
+    
+    // Якщо розіграш активний і вже був хоча б один раунд
+    if (currentRound > 0 && availableParticipants.length > 0 && availablePrizes.length > 0) {
+        // Показати кнопку "наступний раунд"
+        if (nextBtn) nextBtn.style.display = 'inline-block';
+        if (startBtn) startBtn.style.display = 'none';
+        if (newBtn) newBtn.style.display = 'none';
+        
+        console.log('Відновлено стан кнопки "наступний раунд" для активного розіграшу');
+    } else if (currentRound === 0) {
+        // Якщо розіграш тільки розпочався, але ще не було раундів
+        if (startBtn) startBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (newBtn) newBtn.style.display = 'none';
     }
 }
 
@@ -782,7 +813,8 @@ window.DataManager = {
     handleExcelLoad,
     exportToExcel,
     exportResultsToExcel,
-    clearResults
+    clearResults,
+    restoreRaffleButtonState
 };
 
 // Глобальні функції видалено - використовуються через обгортки в main.js або DataManager модуль
