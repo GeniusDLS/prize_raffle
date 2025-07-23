@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RAFFLE ENGINE MODULE
  * Відповідає за логіку розіграшу, анімації та налаштування
  */
@@ -7,15 +7,18 @@
 
 // Налаштування анімації за замовчуванням
 const DEFAULT_ANIMATION_SETTINGS = {
-    spinDuration: 3, // секунди - тривалість обертання барабанів
-    spinSpeed: 100, // мілісекунди - швидкість зміни елементів барабанів
-    slowDownDuration: 2, // секунди - тривалість ефекту уповільнення барабанів
+    spinDuration: 5, // секунди - тривалість обертання барабанів
+    spinSpeed: 50, // мілісекунди - швидкість зміни елементів барабанів
+    slowDownDuration: 1, // секунди - тривалість ефекту уповільнення барабанів
     slowDownEffect: true, // увімкнути/вимкнути ефект уповільнення
-    popupRotations: 1, // кількість обертів popup при появі (можна дробові: 0.5, 1.5, тощо)
-    popupAnimationSpeed: 0.8, // швидкість наближення popup (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
-    resultHighlightDuration: 1, // секунди - тривалість підсвічування
-    popupCountdownTime: 10, // секунди
-    enableSound: false
+    showWinnerCelebration: true, // показувати привітання переможця (за замовчуванням відключено)
+    popupRotations: 1, // кількість обертів привітання при появі (можна дробові: 0.5, 1.5, тощо)
+    popupAnimationSpeed: 0.8, // швидкість наближення привітання (0.1-1.0, де 0.1 - дуже повільно, 1.0 - різко)
+    disablePopupAppearAnimation: true, // відключити анімацію появи вікна привітання
+    disablePopupInternalAnimations: false, // відключити внутрішні анімації (трофей, конфеті тощо)
+    resultHighlightDuration: 0, // секунди - тривалість підсвічування
+    popupCountdownTime: 60, // секунди
+    enableSound: true
 };
 
 let animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
@@ -83,6 +86,11 @@ function nextRound() {
     if (participantDrum) participantDrum.classList.add('spinning');
     if (prizeDrum) prizeDrum.classList.add('spinning');
 
+    // Запустити звук обертання барабанів
+    if (window.SoundManager) {
+        window.SoundManager.playSpinSound(animationSettings.spinDuration);
+    }
+
     // Показати випадкові імена під час обертання
     const spinInterval = setInterval(() => {
         if (participantDrum && availableParticipants.length > 0) {
@@ -98,6 +106,11 @@ function nextRound() {
         // Спочатку зупинити зміну тексту
         clearInterval(spinInterval);
         
+        // Зупинити звук обертання
+        if (window.SoundManager) {
+            window.SoundManager.stopSpinSound();
+        }
+        
         // Вибір переможця з урахуванням ваги
         const winner = selectWeightedRandom(availableParticipants);
         const prizeIndex = Math.floor(Math.random() * availablePrizes.length);
@@ -106,6 +119,11 @@ function nextRound() {
         // Встановити фінальний результат
         setDrumText(participantDrum, winner.name);
         setDrumText(prizeDrum, wonPrize);
+
+        // Відтворити звук результату
+        if (window.SoundManager) {
+            window.SoundManager.playResultSound();
+        }
 
         // Додати ефект уповільнення замість миттєвої зупинки (якщо увімкнено)
         if (animationSettings.slowDownEffect) {
@@ -198,9 +216,26 @@ function nextRound() {
     if (nextBtn) nextBtn.style.display = 'none';
 }
 
+/**
+ * Покращений генератор випадкових чисел на основі crypto.getRandomValues()
+ * Більш справедливий для великої кількості учасників (1000+)
+ */
+function secureRandom() {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        // Використовуємо криптографічно стійкий генератор
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] / (0xffffffff + 1);
+    } else {
+        // Fallback для старих браузерів
+        console.warn('crypto.getRandomValues недоступний, використовується Math.random()');
+        return Math.random();
+    }
+}
+
 function selectWeightedRandom(participants) {
     const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
-    let random = Math.random() * totalWeight;
+    let random = secureRandom() * totalWeight; // ← тепер використовуємо покращений генератор
 
     for (const participant of participants) {
         random -= participant.weight;
@@ -290,6 +325,24 @@ let popupCountdownInterval = null;
 let popupAutoCloseTimeout = null;
 
 function showWinnerPopup(winnerName, winnerDivision, prizeName) {
+    // Перевірити чи увімкнено показ привітання переможця
+    if (!animationSettings.showWinnerCelebration) {
+        // Якщо привітання відключено, одразу показати кнопку наступного раунду або завершити розіграш
+        const availableParticipants = window.DataManager.availableParticipants;
+        const availablePrizes = window.DataManager.availablePrizes;
+        const nextBtn = document.getElementById('next-round-btn');
+        
+        if (availableParticipants.length > 0 && availablePrizes.length > 0) {
+            if (nextBtn) nextBtn.style.display = 'inline-block';
+        } else {
+            // Якщо немає більше учасників або призів, завершити розіграш
+            setTimeout(() => {
+                endRaffle();
+            }, 1000); // Короткий час для завершення анімації барабанів
+        }
+        return;
+    }
+
     const popup = document.getElementById('winner-popup');
     if (!popup) return;
     
@@ -307,56 +360,77 @@ function showWinnerPopup(winnerName, winnerDivision, prizeName) {
     // Показати popup
     popup.style.display = 'flex';
     
-    // Застосувати динамічну анімацію на основі налаштувань
+    // Відтворити звук перемоги
+    if (window.SoundManager) {
+        window.SoundManager.playVictorySound();
+    }
+    
+    // Застосувати CSS класи для відключення анімацій
     if (popupContent) {
-        const rotations = animationSettings.popupRotations;
-        const animationSpeed = animationSettings.popupAnimationSpeed;
-        const duration = 0.5 + (1.5 / animationSpeed); // Від 0.5 до 2 секунд залежно від швидкості
+        // Очистити попередні класи
+        popupContent.classList.remove('no-appear-animation', 'no-internal-animations');
         
-        // Розрахувати початкову та кінцеву позицію
-        const totalRotationDegrees = rotations * 360;
-        const startRotation = -(totalRotationDegrees % 360);
+        // Додати класи відключення анімацій за потреби
+        if (animationSettings.disablePopupInternalAnimations) {
+            popupContent.classList.add('no-internal-animations');
+        }
         
-        // Очистити попередні анімації
-        popupContent.style.animation = 'none';
-        popupContent.style.transform = `scale(0.1) rotate(${startRotation}deg)`;
-        popupContent.style.opacity = '0';
-        
-        // Додати нову просту анімацію
-        setTimeout(() => {
-            // Створити простіші keyframes тільки з початком і кінцем
-            const styleSheet = document.createElement('style');
-            styleSheet.textContent = `
-                @keyframes smoothPopupAppear {
-                    0% {
-                        transform: scale(0.1) rotate(${startRotation}deg);
-                        opacity: 0;
-                    }
-                    100% {
-                        transform: scale(1) rotate(0deg);
-                        opacity: 1;
-                    }
-                }
-            `;
+        if (animationSettings.disablePopupAppearAnimation) {
+            // Відключити анімацію появи - показати popup миттєво
+            popupContent.classList.add('no-appear-animation');
+            popupContent.style.transform = 'scale(1) rotate(0deg)';
+            popupContent.style.opacity = '1';
+        } else {
+            // Застосувати динамічну анімацію на основі налаштувань
+            const rotations = animationSettings.popupRotations;
+            const animationSpeed = animationSettings.popupAnimationSpeed;
+            const duration = 0.5 + (1.5 / animationSpeed); // Від 0.5 до 2 секунд залежно від швидкості
             
-            // Видалити попередні стилі та додати нові
-            const oldStyle = document.getElementById('dynamic-popup-style');
-            if (oldStyle) oldStyle.remove();
+            // Розрахувати початкову та кінцеву позицію
+            const totalRotationDegrees = rotations * 360;
+            const startRotation = -(totalRotationDegrees % 360);
             
-            styleSheet.id = 'dynamic-popup-style';
-            document.head.appendChild(styleSheet);
+            // Очистити попередні анімації
+            popupContent.style.animation = 'none';
+            popupContent.style.transform = `scale(0.1) rotate(${startRotation}deg)`;
+            popupContent.style.opacity = '0';
             
-            // Застосувати анімацію
-            const easingFunction = animationSpeed > 0.5 ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'ease-out';
-            popupContent.style.animation = `smoothPopupAppear ${duration}s ${easingFunction} forwards`;
-            
-            // Очистити анімацію після завершення
+            // Додати нову просту анімацію
             setTimeout(() => {
-                popupContent.style.animation = 'none';
-                popupContent.style.transform = 'scale(1) rotate(0deg)';
-                popupContent.style.opacity = '1';
-            }, duration * 1000 + 50);
-        }, 50);
+                // Створити простіші keyframes тільки з початком і кінцем
+                const styleSheet = document.createElement('style');
+                styleSheet.textContent = `
+                    @keyframes smoothPopupAppear {
+                        0% {
+                            transform: scale(0.1) rotate(${startRotation}deg);
+                            opacity: 0;
+                        }
+                        100% {
+                            transform: scale(1) rotate(0deg);
+                            opacity: 1;
+                        }
+                    }
+                `;
+                
+                // Видалити попередні стилі та додати нові
+                const oldStyle = document.getElementById('dynamic-popup-style');
+                if (oldStyle) oldStyle.remove();
+                
+                styleSheet.id = 'dynamic-popup-style';
+                document.head.appendChild(styleSheet);
+                
+                // Застосувати анімацію
+                const easingFunction = animationSpeed > 0.5 ? 'cubic-bezier(0.68, -0.55, 0.265, 1.55)' : 'ease-out';
+                popupContent.style.animation = `smoothPopupAppear ${duration}s ${easingFunction} forwards`;
+                
+                // Очистити анімацію після завершення
+                setTimeout(() => {
+                    popupContent.style.animation = 'none';
+                    popupContent.style.transform = 'scale(1) rotate(0deg)';
+                    popupContent.style.opacity = '1';
+                }, duration * 1000 + 50);
+            }, 50);
+        }
     }
     
     // Запустити countdown таймер
@@ -416,24 +490,28 @@ function hideWinnerPopup() {
 // ===== НАЛАШТУВАННЯ АНІМАЦІЇ =====
 
 function showAnimationSettings() {
-    // Приховати всі сторінки
-    document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+    // Показати сторінку налаштувань з вкладкою анімації
+    if (typeof showSettings === 'function') {
+        showSettings();
+    } else if (window.UIController && window.UIController.showSettings) {
+        window.UIController.showSettings();
+    }
     
-    // Показати сторінку налаштувань
-    const settingsPage = document.getElementById('animation-settings-page');
-    if (settingsPage) settingsPage.classList.add('active');
-    
-    // Завантажити поточні налаштування
-    loadAnimationSettingsToForm();
+    // Завжди завантажити поточні налаштування до форми при відкритті налаштувань
+    setTimeout(() => {
+        loadAnimationSettingsToForm();
+    }, 50);
 }
 
 function hideAnimationSettings() {
-    const settingsPage = document.getElementById('animation-settings-page');
-    if (settingsPage) settingsPage.classList.remove('active');
-    
     // Повернутися на сторінку даних
-    if (typeof showPage === 'function') showPage('data');
+    if (typeof hideSettings === 'function') {
+        hideSettings();
+    } else if (window.UIController && window.UIController.hideSettings) {
+        window.UIController.hideSettings();
+    } else if (typeof showPage === 'function') {
+        showPage('data');
+    }
 }
 
 function loadAnimationSettingsToForm() {
@@ -441,8 +519,11 @@ function loadAnimationSettingsToForm() {
     const spinSpeed = document.getElementById('spin-speed');
     const slowDownDuration = document.getElementById('slow-down-duration');
     const slowDownEffect = document.getElementById('slow-down-effect');
+    const showWinnerCelebration = document.getElementById('show-winner-celebration');
     const popupRotations = document.getElementById('popup-rotations');
     const popupAnimationSpeed = document.getElementById('popup-animation-speed');
+    const disablePopupAppearAnimation = document.getElementById('disable-popup-appear-animation');
+    const disablePopupInternalAnimations = document.getElementById('disable-popup-internal-animations');
     const resultHighlightDuration = document.getElementById('result-highlight-duration');
     const popupCountdownTime = document.getElementById('popup-countdown-time');
     const enableSound = document.getElementById('enable-sound');
@@ -451,20 +532,33 @@ function loadAnimationSettingsToForm() {
     if (spinSpeed) spinSpeed.value = animationSettings.spinSpeed;
     if (slowDownDuration) slowDownDuration.value = animationSettings.slowDownDuration;
     if (slowDownEffect) slowDownEffect.checked = animationSettings.slowDownEffect;
+    if (showWinnerCelebration) showWinnerCelebration.checked = animationSettings.showWinnerCelebration;
     if (popupRotations) popupRotations.value = animationSettings.popupRotations;
     if (popupAnimationSpeed) popupAnimationSpeed.value = animationSettings.popupAnimationSpeed;
+    if (disablePopupAppearAnimation) disablePopupAppearAnimation.checked = animationSettings.disablePopupAppearAnimation;
+    if (disablePopupInternalAnimations) disablePopupInternalAnimations.checked = animationSettings.disablePopupInternalAnimations;
     if (resultHighlightDuration) resultHighlightDuration.value = animationSettings.resultHighlightDuration;
     if (popupCountdownTime) popupCountdownTime.value = animationSettings.popupCountdownTime;
     if (enableSound) enableSound.checked = animationSettings.enableSound;
+    
+    // Ініціалізувати автозбереження після завантаження значень тільки якщо ще не ініціалізовано
+    if (!window._animationAutoSaveInitialized) {
+        setupAnimationSettingsAutoSave();
+        window._animationAutoSaveInitialized = true;
+    }
 }
 
-function saveAnimationSettings() {
+function autoSaveAnimationSettings() {
+    // Автоматичне збереження без показу повідомлення
     const spinDuration = document.getElementById('spin-duration');
     const spinSpeed = document.getElementById('spin-speed');
     const slowDownDuration = document.getElementById('slow-down-duration');
     const slowDownEffect = document.getElementById('slow-down-effect');
+    const showWinnerCelebration = document.getElementById('show-winner-celebration');
     const popupRotations = document.getElementById('popup-rotations');
     const popupAnimationSpeed = document.getElementById('popup-animation-speed');
+    const disablePopupAppearAnimation = document.getElementById('disable-popup-appear-animation');
+    const disablePopupInternalAnimations = document.getElementById('disable-popup-internal-animations');
     const resultHighlightDuration = document.getElementById('result-highlight-duration');
     const popupCountdownTime = document.getElementById('popup-countdown-time');
     const enableSound = document.getElementById('enable-sound');
@@ -474,9 +568,117 @@ function saveAnimationSettings() {
         spinSpeed: parseInt(spinSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.spinSpeed,
         slowDownDuration: parseFloat(slowDownDuration?.value) || DEFAULT_ANIMATION_SETTINGS.slowDownDuration,
         slowDownEffect: slowDownEffect?.checked !== false, // За замовчуванням true
+        showWinnerCelebration: showWinnerCelebration?.checked || false, // За замовчуванням false
         popupRotations: parseFloat(popupRotations?.value) || DEFAULT_ANIMATION_SETTINGS.popupRotations,
         popupAnimationSpeed: parseFloat(popupAnimationSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
-        resultHighlightDuration: parseFloat(resultHighlightDuration?.value) || DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
+        disablePopupAppearAnimation: disablePopupAppearAnimation?.checked || false, // За замовчуванням false
+        disablePopupInternalAnimations: disablePopupInternalAnimations?.checked || false, // За замовчуванням false
+        resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
+        popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
+        enableSound: enableSound?.checked || false
+    };
+    
+    // Зберегти в localStorage
+    localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
+    
+    // Показати короткий індикатор збереження
+    showSettingsSaveIndicator();
+}
+
+function showSettingsSaveIndicator() {
+    // Створити або знайти індикатор збереження
+    let indicator = document.getElementById('settings-save-indicator');
+    if (!indicator) {
+        indicator = document.createElement('div');
+        indicator.id = 'settings-save-indicator';
+        indicator.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        `;
+        document.body.appendChild(indicator);
+    }
+    
+    indicator.textContent = '✅ Налаштування збережено';
+    indicator.style.opacity = '1';
+    
+    // Сховати через 2 секунди
+    setTimeout(() => {
+        indicator.style.opacity = '0';
+    }, 2000);
+}
+
+function setupAnimationSettingsAutoSave() {
+    // Додати event listeners для всіх полів налаштувань
+    const settingsFields = [
+        'spin-duration',
+        'spin-speed',
+        'slow-down-duration',
+        'slow-down-effect',
+        'show-winner-celebration',
+        'popup-rotations',
+        'popup-animation-speed',
+        'disable-popup-appear-animation',
+        'disable-popup-internal-animations',
+        'result-highlight-duration',
+        'popup-countdown-time',
+        'enable-sound'
+    ];
+    
+    settingsFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            // Для checkbox та radio використовуємо change
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                field.addEventListener('change', () => {
+                    // Невелика затримка для плавності
+                    setTimeout(autoSaveAnimationSettings, 100);
+                });
+            } else {
+                // Для інших полів використовуємо input з debounce
+                let timeout;
+                field.addEventListener('input', () => {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(autoSaveAnimationSettings, 500); // 500ms затримка
+                });
+            }
+        }
+    });
+}
+
+function saveAnimationSettings() {
+    const spinDuration = document.getElementById('spin-duration');
+    const spinSpeed = document.getElementById('spin-speed');
+    const slowDownDuration = document.getElementById('slow-down-duration');
+    const slowDownEffect = document.getElementById('slow-down-effect');
+    const showWinnerCelebration = document.getElementById('show-winner-celebration');
+    const popupRotations = document.getElementById('popup-rotations');
+    const popupAnimationSpeed = document.getElementById('popup-animation-speed');
+    const disablePopupAppearAnimation = document.getElementById('disable-popup-appear-animation');
+    const disablePopupInternalAnimations = document.getElementById('disable-popup-internal-animations');
+    const resultHighlightDuration = document.getElementById('result-highlight-duration');
+    const popupCountdownTime = document.getElementById('popup-countdown-time');
+    const enableSound = document.getElementById('enable-sound');
+    
+    animationSettings = {
+        spinDuration: parseFloat(spinDuration?.value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
+        spinSpeed: parseInt(spinSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.spinSpeed,
+        slowDownDuration: parseFloat(slowDownDuration?.value) || DEFAULT_ANIMATION_SETTINGS.slowDownDuration,
+        slowDownEffect: slowDownEffect?.checked !== false, // За замовчуванням true
+        showWinnerCelebration: showWinnerCelebration?.checked || false, // За замовчуванням false
+        popupRotations: parseFloat(popupRotations?.value) || DEFAULT_ANIMATION_SETTINGS.popupRotations,
+        popupAnimationSpeed: parseFloat(popupAnimationSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
+        disablePopupAppearAnimation: disablePopupAppearAnimation?.checked || false, // За замовчуванням false
+        disablePopupInternalAnimations: disablePopupInternalAnimations?.checked || false, // За замовчуванням false
+        resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: enableSound?.checked || false
     };
@@ -553,6 +755,7 @@ window.RaffleEngine = {
     startRaffle,
     nextRound,
     selectWeightedRandom,
+    secureRandom, // Покращений генератор випадкових чисел
     endRaffle,
     startNewRaffle,
     resetRaffle,
@@ -566,8 +769,11 @@ window.RaffleEngine = {
     hideAnimationSettings,
     loadAnimationSettingsToForm,
     saveAnimationSettings,
+    autoSaveAnimationSettings,
     resetAnimationSettings,
     loadAnimationSettings,
+    setupAnimationSettingsAutoSave,
+    showSettingsSaveIndicator,
     
     // Ініціалізація
     initializePopupHandlers

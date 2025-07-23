@@ -33,7 +33,7 @@
                     <button class="btn btn-primary" onclick="loadExcelData()">📊 Імпорт з Excel</button>
                     <button class="btn btn-primary" onclick="exportToExcel()">📋 Експорт в Excel</button>
                     <button class="btn btn-warning" onclick="clearStoredData()">🗑️ Очистити збережені дані</button>
-                    <button class="btn btn-secondary" onclick="showAnimationSettings()">⚙️ Налаштування анімації</button>
+                    <button class="btn btn-secondary" onclick="showSettings()">⚙️ Налаштування</button>
                 </div>
                 <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     Дані автоматично зберігаються при кожній зміні та відновлюються при перезавантаженні сторінки.
@@ -159,87 +159,313 @@
             </div>
         </div>
 
-        <!-- Сторінка налаштувань анімації -->
-        <div id="animation-settings-page" class="page">
+        <!-- Сторінка налаштувань -->
+        <div id="settings-page" class="page">
             <div class="form-section">
-                <h3>⚙️ Налаштування анімації</h3>
-                <p style="margin-bottom: 20px; color: #666;">Налаштуйте параметри анімації розіграшу під ваші потреби</p>
+                <h3>⚙️ Налаштування</h3>
                 
-                <div class="settings-grid">
-                    <div class="setting-item">
-                        <label for="spin-duration">🎲 Тривалість обертання барабанів (секунди):</label>
-                        <input type="number" id="spin-duration" min="0.5" max="10" step="0.5" value="3">
-                        <small>Як довго барабани будуть крутитися під час розіграшу</small>
+                <!-- Внутрішня навігація налаштувань -->
+                <div class="settings-nav">
+                    <button class="settings-tab active" onclick="showSettingsTab('animation')">🎬 Анімація</button>
+                    <button class="settings-tab" onclick="showSettingsTab('tests')">🧪 Тести чесності</button>
+                </div>
+                
+                <!-- Розділ налаштувань анімації -->
+                <div id="animation-settings" class="settings-content active">
+                    <p style="margin-bottom: 20px; color: #666;">Налаштуйте параметри анімації розіграшу під ваші потреби</p>
+                    
+                    <div class="settings-grid">
+                        <div class="setting-item">
+                            <label for="spin-duration">🎲 Тривалість обертання барабанів (секунди):</label>
+                            <input type="number" id="spin-duration" min="0.5" max="10" step="0.5" value="3">
+                            <small>Як довго барабани будуть крутитися під час розіграшу</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="spin-speed">⚡ Швидкість зміни елементів барабанів (мілісекунди):</label>
+                            <input type="number" id="spin-speed" min="50" max="500" step="10" value="100">
+                            <small>Швидкість зміни імен та призів на барабанах</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="slow-down-effect">🎯 Ефект поступового зупинення барабанів:</label>
+                            <input type="checkbox" id="slow-down-effect" checked>
+                            <small>Увімкнути плавне уповільнення барабанів перед зупинкою (рекомендовано)</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="slow-down-duration">⏱️ Тривалість ефекту уповільнення (секунди):</label>
+                            <input type="number" id="slow-down-duration" min="0.2" max="3" step="0.1" value="2">
+                            <small>Як довго триватиме ефект поступового зупинення барабанів</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="show-winner-celebration">🎉 Показувати привітання переможця:</label>
+                            <input type="checkbox" id="show-winner-celebration">
+                            <small>Увімкнути/вимкнути показ вікна з привітанням після кожного розіграшу</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="popup-rotations">🎆 Кількість обертів привітання:</label>
+                            <input type="number" id="popup-rotations" min="0" max="5" step="0.5" value="1">
+                            <small>Скільки обертів зробить привітання при появі (можна дробові: 0.5, 1.5, тощо)</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="popup-animation-speed">📈 Швидкість наближення привітання:</label>
+                            <input type="number" id="popup-animation-speed" min="0.1" max="1.0" step="0.1" value="0.8">
+                            <small>Як швидко привітання наближається до екрана (0.1 - плавно, 1.0 - різко)</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="disable-popup-appear-animation">🎬 Відключити анімацію появи вікна привітання:</label>
+                            <input type="checkbox" id="disable-popup-appear-animation">
+                            <small>Вікно привітання з'являтиметься миттєво без анімації наближення та обертання</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="disable-popup-internal-animations">✨ Відключити внутрішні анімації привітання:</label>
+                            <input type="checkbox" id="disable-popup-internal-animations">
+                            <small>Відключити анімації трофею, тексту та конфеті всередині вікна привітання</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="result-highlight-duration">✨ Тривалість підсвічування результату (секунди):</label>
+                            <input type="number" id="result-highlight-duration" min="0" max="10" step="0.5" value="1">
+                            <small>Як довго результат буде підсвічений після завершення</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="popup-countdown-time">⏰ Час автозакриття привітання (секунди):</label>
+                            <input type="number" id="popup-countdown-time" min="5" max="60" step="1" value="10">
+                            <small>Через скільки секунд автоматично закриється вікно з привітанням</small>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <label for="enable-sound">🔊 Звукові ефекти:</label>
+                            <input type="checkbox" id="enable-sound">
+                            <small>Увімкнути звукові ефекти під час розіграшу</small>
+                        </div>
                     </div>
                     
-                    <div class="setting-item">
-                        <label for="spin-speed">⚡ Швидкість зміни елементів барабанів (мілісекунди):</label>
-                        <input type="number" id="spin-speed" min="50" max="500" step="10" value="100">
-                        <small>Швидкість зміни імен та призів на барабанах</small>
+                    <div class="settings-actions">
+                        <button class="btn btn-warning" onclick="resetAnimationSettings()">🔄 Скинути на початкові</button>
+                        <button class="btn btn-secondary" onclick="hideSettings()">⬅️ Повернутись</button>
                     </div>
                     
-                    <div class="setting-item">
-                        <label for="slow-down-effect">🎯 Ефект поступового зупинення барабанів:</label>
-                        <input type="checkbox" id="slow-down-effect" checked>
-                        <small>Увімкнути плавне уповільнення барабанів перед зупинкою (рекомендовано)</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="slow-down-duration">⏱️ Тривалість ефекту уповільнення (секунди):</label>
-                        <input type="number" id="slow-down-duration" min="0.2" max="3" step="0.1" value="2">
-                        <small>Як довго триватиме ефект поступового зупинення барабанів</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="popup-rotations">🎆 Кількість обертів popup:</label>
-                        <input type="number" id="popup-rotations" min="0" max="5" step="0.5" value="1">
-                        <small>Скільки обертів зробить popup при появі (можна дробові: 0.5, 1.5, тощо)</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="popup-animation-speed">📈 Швидкість наближення popup:</label>
-                        <input type="number" id="popup-animation-speed" min="0.1" max="1.0" step="0.1" value="0.8">
-                        <small>Як швидко popup наближається до екрана (0.1 - плавно, 1.0 - різко)</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="result-highlight-duration">✨ Тривалість підсвічування результату (секунди):</label>
-                        <input type="number" id="result-highlight-duration" min="1" max="10" step="0.5" value="1">
-                        <small>Як довго результат буде підсвічений після завершення</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="popup-countdown-time">⏰ Час автозакриття popup (секунди):</label>
-                        <input type="number" id="popup-countdown-time" min="5" max="60" step="1" value="10">
-                        <small>Через скільки секунд автоматично закриється вікно з привітанням</small>
-                    </div>
-                    
-                    <div class="setting-item">
-                        <label for="enable-sound">🔊 Звукові ефекти:</label>
-                        <input type="checkbox" id="enable-sound">
-                        <small>Увімкнути звукові ефекти під час розіграшу</small>
+                    <div class="settings-info">
+                        <h4>💡 Поради:</h4>
+                        <ul>
+                            <li>Для швидших розіграшів: зменште тривалість обертання барабанів</li>
+                            <li>Ефект уповільнення робить зупинку барабанів більш реалістичною</li>
+                            <li>Тривалість уповільнення 1-2 сек оптимальна для більшості випадків</li>
+                            <li>Підсвічування результату 1-3 сек дає достатньо часу для сприйняття</li>
+                            <li>Привітання переможця можна відключити для швидших розіграшів</li>
+                            <li>Для спектаклю: збільште кількість обертів привітання і зменште швидкість наближення</li>
+                            <li>Привітання може обертатися дробово: 0.5 = півоберта, 2.5 = два з половиною оберти</li>
+                            <li>Швидкість наближення: 0.1 = плавно, 1.0 = різко</li>
+                            <li>Відключення анімації появи прискорює показ вікна привітання</li>
+                            <li>Відключення внутрішніх анімацій зменшує навантаження на слабкі пристрої</li>
+                            <li>Налаштування зберігаються автоматично і не втрачаються при очищенні даних</li>
+                            <li>Звукові ефекти працюють не в усіх браузерах</li>
+                        </ul>
                     </div>
                 </div>
                 
-                <div class="settings-actions">
-                    <button class="btn btn-primary" onclick="saveAnimationSettings()">💾 Зберегти налаштування</button>
-                    <button class="btn btn-warning" onclick="resetAnimationSettings()">🔄 Скинути на початкові</button>
-                    <button class="btn btn-secondary" onclick="hideAnimationSettings()">⬅️ Повернутись</button>
-                </div>
+                <!-- Розділ тестів чесності -->
+                <div id="tests-settings" class="settings-content">
+                    <p style="margin-bottom: 20px; color: #666;">Перевірте якість та справедливість алгоритму розіграшу за допомогою статистичних тестів</p>
                 
-                <div class="settings-info">
-                    <h4>💡 Поради:</h4>
-                    <ul>
-                        <li>Для швидших розіграшів: зменште тривалість обертання барабанів</li>
-                        <li>Ефект уповільнення робить зупинку барабанів більш реалістичною</li>
-                        <li>Тривалість уповільнення 1-2 сек оптимальна для більшості випадків</li>
-                        <li>Підсвічування результату 1-3 сек дає достатньо часу для сприйняття</li>
-                        <li>Для спектаклю: збільште кількість обертів popup і зменште швидкість наближення</li>
-                        <li>popup може обертатися дробово: 0.5 = півоберта, 2.5 = два з половиною оберти</li>
-                        <li>Швидкість наближення: 0.1 = плавно, 1.0 = різко</li>
-                        <li>Налаштування зберігаються автоматично і не втрачаються при очищенні даних</li>
-                        <li>Звукові ефекти працюють не в усіх браузерах</li>
-                    </ul>
+                    <!-- Тест послідовностей -->
+                    <div class="test-section">
+                        <h4>🔍 Тест послідовностей (Runs Test)</h4>
+                        <p>Перевіряє наявність патернів у послідовності випадкових чисел. Хороший генератор не повинен мати передбачуваних послідовностей.</p>
+                        
+                        <div class="test-controls">
+                            <div class="form-group" style="align-items: center;">
+                                <label for="runs-test-count">Кількість симуляцій:</label>
+                                <input type="number" id="runs-test-count" value="1000" min="100" max="10000" step="100" style="width: 120px;">
+                                <button class="btn btn-primary" onclick="runSequenceTest()">🚀 Запустити тест</button>
+                                <button class="btn btn-secondary" onclick="clearTestResults()">🧹 Очистити</button>
+                            </div>
+                        </div>
+                        
+                        <div id="sequence-test-status" class="test-status" style="display: none;"></div>
+                        
+                        <div id="sequence-test-results" class="test-results" style="display: none;">
+                            <h5>Результати тесту послідовностей:</h5>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <div class="result-title">Всього симуляцій</div>
+                                    <div class="result-value" id="total-simulations">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Середня кількість серій</div>
+                                    <div class="result-value" id="average-runs">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Очікувана кількість серій</div>
+                                    <div class="result-value" id="expected-runs">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Статистика Z</div>
+                                    <div class="result-value" id="z-statistic">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">P-value</div>
+                                    <div class="result-value" id="p-value">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Результат тесту</div>
+                                    <div class="result-value" id="test-result">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="test-interpretation">
+                                <h6>Інтерпретація результатів:</h6>
+                                <div id="interpretation-text"></div>
+                            </div>
+                            
+                            <div class="test-details">
+                                <h6>Деталі тестування:</h6>
+                                <div id="test-details-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Майбутні тести -->
+                    <div class="test-section">
+                        <h4>📈 Тест розподілу (Chi-square)</h4>
+                        <p>Перевірка відповідності результатів розіграшу очікуваному розподілу з урахуванням ваги учасників. Проводиться на реальних даних з вашого проєкту.</p>
+                        
+                        <div class="test-controls">
+                            <div class="form-group" style="align-items: center;">
+                                <label for="distribution-test-count">Кількість симуляцій:</label>
+                                <input type="number" id="distribution-test-count" value="1000" min="100" max="10000" step="100" style="width: 120px;">
+                                <button class="btn btn-primary" onclick="runDistributionTest()">🚀 Запустити тест</button>
+                                <button class="btn btn-secondary" onclick="clearDistributionTestResults()">🧹 Очистити</button>
+                            </div>
+                            <div class="participants-requirement">
+                                <small>⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</small>
+                            </div>
+                        </div>
+                        
+                        <div id="distribution-test-status" class="test-status" style="display: none;"></div>
+                        
+                        <div id="distribution-test-results" class="test-results" style="display: none;">
+                            <h5>Результати тесту розподілу:</h5>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <div class="result-title">Всього симуляцій</div>
+                                    <div class="result-value" id="dist-total-simulations">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Учасників у тесті</div>
+                                    <div class="result-value" id="dist-participants-count">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Ступені свободи</div>
+                                    <div class="result-value" id="dist-degrees-freedom">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">χ² статистика</div>
+                                    <div class="result-value" id="dist-chi-square">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Критичне значення</div>
+                                    <div class="result-value" id="dist-critical-value">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Результат тесту</div>
+                                    <div class="result-value" id="dist-test-result">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="participants-stats">
+                                <h6>Статистика по учасниках:</h6>
+                                <div id="participants-distribution-table"></div>
+                            </div>
+                            
+                            <div class="test-interpretation">
+                                <h6>Інтерпретація результатів:</h6>
+                                <div id="dist-interpretation-text"></div>
+                            </div>
+                            
+                            <div class="test-details">
+                                <h6>Деталі тестування:</h6>
+                                <div id="dist-test-details-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-section">
+                        <h4>🎯 Тест справедливості</h4>
+                        <p>Комплексна перевірка справедливості алгоритму: довірчі інтервали, індекс Джині та загальний бал справедливості.</p>
+                        
+                        <div class="test-controls">
+                            <div class="form-group" style="align-items: center;">
+                                <label for="fairness-test-count">Кількість симуляцій:</label>
+                                <input type="number" id="fairness-test-count" value="1000" min="100" max="10000" step="100" style="width: 120px;">
+                                <button class="btn btn-primary" onclick="runFairnessTest()">🚀 Запустити тест</button>
+                                <button class="btn btn-secondary" onclick="clearFairnessTestResults()">🧹 Очистити</button>
+                            </div>
+                            <div class="participants-requirement">
+                                <small>⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</small>
+                            </div>
+                        </div>
+                        
+                        <div id="fairness-test-status" class="test-status" style="display: none;"></div>
+                        
+                        <div id="fairness-test-results" class="test-results" style="display: none;">
+                            <h5>Результати тесту справедливості:</h5>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <div class="result-title">Розіграші × Раунди = Перемоги</div>
+                                    <div class="result-value" id="fair-total-simulations">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Учасників у тесті</div>
+                                    <div class="result-value" id="fair-participants-count">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">У довірчих інтервалах</div>
+                                    <div class="result-value" id="fair-confidence-count">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Індекс Джині</div>
+                                    <div class="result-value" id="fair-gini-index">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Макс. відхилення</div>
+                                    <div class="result-value" id="fair-max-deviation">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Бал справедливості</div>
+                                    <div class="result-value" id="fair-score">-</div>
+                                </div>
+                            </div>
+                            
+                            <div class="fairness-intervals">
+                                <h6>Довірчі інтервали учасників:</h6>
+                                <div id="fairness-intervals-table"></div>
+                            </div>
+                            
+                            <div class="test-interpretation">
+                                <h6>Інтерпретація результатів:</h6>
+                                <div id="fair-interpretation-text"></div>
+                            </div>
+                            
+                            <div class="test-details">
+                                <h6>Деталі тестування:</h6>
+                                <div id="fair-test-details-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="test-section" style="opacity: 0.6;">
+                        <h4>🔄 Тест на період <span style="font-size: 0.8em; color: #999;">[Скоро]</span></h4>
+                        <p>Перевірка того, що генератор не повторює послідовності через короткі інтервали.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -290,8 +516,11 @@
     
     <!-- Модулі додатку (порядок важливий!) -->
     <script src="js/data-manager.js"></script>
+    <script src="js/audio-data.js"></script>
+    <script src="js/sound-manager.js"></script>
     <script src="js/raffle-engine.js"></script>
     <script src="js/ui-controller.js"></script>
+    <script src="js/fairness-tests.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

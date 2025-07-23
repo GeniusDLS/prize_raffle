@@ -1,4 +1,4 @@
-﻿/**
+/**
  * UI CONTROLLER MODULE
  * Відповідає за інтерфейс користувача та відображення даних
  */
@@ -32,6 +32,13 @@ function showPage(pageId) {
         }
     } else if (pageId === 'results') {
         updateResultsDisplay();
+    } else if (pageId === 'settings') {
+        // Завантажити налаштування анімації до форми при відкритті сторінки налаштувань
+        setTimeout(() => {
+            if (window.RaffleEngine && window.RaffleEngine.loadAnimationSettingsToForm) {
+                window.RaffleEngine.loadAnimationSettingsToForm();
+            }
+        }, 50);
     }
 }
 
@@ -39,7 +46,8 @@ function getPageName(pageId) {
     const pageNames = {
         'data': 'дані',
         'raffle': 'розіграш',
-        'results': 'результати'
+        'results': 'результати',
+        'settings': 'налаштування'
     };
     return pageNames[pageId] || pageId;
 }
@@ -229,6 +237,8 @@ function setupNavigation() {
                 pageId = 'raffle';
             } else if (tabText.includes('результат')) {
                 pageId = 'results';
+            } else if (tabText.includes('тест')) {
+                pageId = 'tests';
             } else if (tabText.includes('дані')) {
                 pageId = 'data';
             }
@@ -300,21 +310,18 @@ function setupButtons() {
         resetRaffleBtn.onclick = window.RaffleEngine.resetRaffle;
     }
     
-    // Налаштувати кнопки анімації
-    const animationSettingsBtn = document.querySelector('button[onclick="showAnimationSettings()"]');
-    if (animationSettingsBtn) {
-        animationSettingsBtn.onclick = window.RaffleEngine.showAnimationSettings;
+    // Налаштувати кнопки налаштувань
+    const settingsBtn = document.querySelector('button[onclick="showSettings()"]');
+    if (settingsBtn) {
+        settingsBtn.onclick = showSettings;
     }
     
-    const hideAnimationBtn = document.querySelector('button[onclick="hideAnimationSettings()"]');
-    if (hideAnimationBtn) {
-        hideAnimationBtn.onclick = window.RaffleEngine.hideAnimationSettings;
+    const hideSettingsBtn = document.querySelector('button[onclick="hideSettings()"]');
+    if (hideSettingsBtn) {
+        hideSettingsBtn.onclick = hideSettings;
     }
     
-    const saveAnimationBtn = document.querySelector('button[onclick="saveAnimationSettings()"]');
-    if (saveAnimationBtn) {
-        saveAnimationBtn.onclick = window.RaffleEngine.saveAnimationSettings;
-    }
+    // Кнопка збереження налаштувань видалена - тепер використовується автозбереження
     
     const resetAnimationBtn = document.querySelector('button[onclick="resetAnimationSettings()"]');
     if (resetAnimationBtn) {
@@ -380,6 +387,33 @@ function loadActiveTab() {
     }
 }
 
+// ===== ФУНКЦІЇ НАЛАШТУВАНЬ =====
+
+function showSettings() {
+    // Показати сторінку налаштувань
+    showPage('settings');
+    // За замовчуванням показати вкладку анімації
+    showSettingsTab('animation');
+}
+
+function hideSettings() {
+    // Повернутися на сторінку даних
+    showPage('data');
+}
+
+function showSettingsTab(tabId) {
+    // Переключення вкладок всередині налаштувань
+    document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.settings-content').forEach(content => content.classList.remove('active'));
+    
+    // Активувати потрібну вкладку
+    const targetTab = document.querySelector(`[onclick="showSettingsTab('${tabId}')"]`);
+    const targetContent = document.getElementById(`${tabId}-settings`);
+    
+    if (targetTab) targetTab.classList.add('active');
+    if (targetContent) targetContent.classList.add('active');
+}
+
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 // Утилітарні функції видалено як невикористовувані
 
@@ -411,6 +445,9 @@ window.UIController = {
     setupButtons,
     setupExcelInput,
     setupInitialPage,
+    showSettings,
+    hideSettings,
+    showSettingsTab,
     
     // Ініціалізація
     initializeUI

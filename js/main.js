@@ -1,4 +1,4 @@
-﻿/**
+/**
  * MAIN MODULE
  * Головний файл для ініціалізації та координації між модулями
  */
@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    if (!window.FairnessTests) {
+        console.error('FairnessTests не завантажено!');
+        return;
+    }
+    
     try {
         // 1. Завантажити дані з localStorage
         console.log('Завантаження збережених даних...');
@@ -32,6 +37,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // 2. Завантажити налаштування анімації
         console.log('Завантаження налаштувань анімації...');
         window.RaffleEngine.loadAnimationSettings();
+        
+        // 2.1. Ініціалізувати автозбереження налаштувань анімації
+        console.log('Ініціалізація автозбереження налаштувань...');
+        // Затримка для завантаження DOM елементів
+        setTimeout(() => {
+            if (window.RaffleEngine.setupAnimationSettingsAutoSave && !window._animationAutoSaveInitialized) {
+                window.RaffleEngine.setupAnimationSettingsAutoSave();
+                window._animationAutoSaveInitialized = true;
+            }
+        }, 100);
         
         // 3. Ініціалізувати UI
         console.log('Ініціалізація інтерфейсу...');
@@ -175,6 +190,53 @@ window.hideWinnerPopup = function() {
 
 // Функції налаштувань анімації видалено - використовуються напряму з RaffleEngine
 
+// Функції тестів чесності
+window.runSequenceTest = function() {
+    if (window.FairnessTests) window.FairnessTests.runSequenceTest();
+};
+
+window.clearTestResults = function() {
+    if (window.FairnessTests) window.FairnessTests.clearTestResults();
+};
+
+window.runDistributionTest = function() {
+    if (window.FairnessTests) window.FairnessTests.runDistributionTest();
+};
+
+window.clearDistributionTestResults = function() {
+    if (window.FairnessTests) window.FairnessTests.clearDistributionTestResults();
+};
+
+// Функції налаштувань
+window.showSettings = function() {
+    if (window.UIController) window.UIController.showSettings();
+};
+
+window.hideSettings = function() {
+    if (window.UIController) window.UIController.hideSettings();
+};
+
+window.showSettingsTab = function(tabId) {
+    if (window.UIController) window.UIController.showSettingsTab(tabId);
+};
+
+// Функції анімації (для зворотної сумісності)
+window.showAnimationSettings = function() {
+    if (window.RaffleEngine) window.RaffleEngine.showAnimationSettings();
+};
+
+window.hideAnimationSettings = function() {
+    if (window.RaffleEngine) window.RaffleEngine.hideAnimationSettings();
+};
+
+window.saveAnimationSettings = function() {
+    if (window.RaffleEngine) window.RaffleEngine.saveAnimationSettings();
+};
+
+window.resetAnimationSettings = function() {
+    if (window.RaffleEngine) window.RaffleEngine.resetAnimationSettings();
+};
+
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 
 // Функція для перевірки стану додатку
@@ -276,6 +338,7 @@ window.RafflePrizeApp = {
     DataManager: () => window.DataManager,
     RaffleEngine: () => window.RaffleEngine,
     UIController: () => window.UIController,
+    FairnessTests: () => window.FairnessTests,
     
     // Утилітарні функції
     checkStatus: window.checkAppStatus,
@@ -293,6 +356,7 @@ window.RafflePrizeApp = {
         console.log('  - DataManager:', !!window.DataManager);
         console.log('  - RaffleEngine:', !!window.RaffleEngine);
         console.log('  - UIController:', !!window.UIController);
+        console.log('  - FairnessTests:', !!window.FairnessTests);
         console.log('Для перевірки статусу викличте: RafflePrizeApp.checkStatus()');
     }
 };

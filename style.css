@@ -229,7 +229,7 @@ body {
     border-radius: 20px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3);
-    width: 400px; /* Розширено з 380px до 400px */
+    width: 500px; /* Розширено з 400px до 500px (+100px) */
     flex-shrink: 0; /* Запобігає зменшенню */
 }
 
@@ -496,7 +496,7 @@ body {
     }
     
     .drum {
-        width: 320px; /* Розширено з 300px до 320px для мобільних */
+        width: 420px; /* Розширено з 320px до 420px для мобільних (+100px) */
         max-width: 90vw; /* Не більше 90% ширини екрану */
     }
     
@@ -1017,6 +1017,74 @@ body {
     }
 }
 
+/* ===== СТИЛІ ДЛЯ ВНУТРІШНЬОЇ НАВІГАЦІЇ НАЛАШТУВАНЬ ===== */
+.settings-nav {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 30px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.settings-tab {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: #666;
+    font-size: 14px;
+}
+
+.settings-tab.active {
+    background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(62, 180, 73, 0.3);
+}
+
+.settings-tab:hover:not(.active) {
+    background: #E8F5E8;
+    color: #2E8B35;
+}
+
+.settings-content {
+    display: none;
+}
+
+.settings-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивність для внутрішньої навігації */
+@media (max-width: 768px) {
+    .settings-nav {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .settings-tab {
+        text-align: center;
+    }
+}
+
 /* Додати ефект підсвічування для барабанів (drum) з анімацією та масштабуванням */
 .drum.result-highlight {
     box-shadow: 0 10px 30px rgba(62, 180, 73, 0.3), 0 0 30px rgba(62, 180, 73, 0.6);
@@ -1039,3 +1107,461 @@ body {
         transform: scale(1.02);
     }
 }
+
+/* ===== СТИЛІ ДЛЯ СТОРІНКИ ТЕСТІВ ЧЕСНОСТІ ===== */
+.test-section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border-left: 4px solid #FF6B35;
+    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.test-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.test-section h4 {
+    color: #FF6B35;
+    margin-bottom: 15px;
+    font-size: 1.3em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.test-section p {
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.test-controls {
+    margin-bottom: 20px;
+}
+
+.test-controls .form-group {
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.test-controls label {
+    font-weight: bold;
+    color: #333;
+    white-space: nowrap;
+}
+
+.test-status {
+    background: #E3F2FD;
+    color: #1976D2;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #2196F3;
+    font-weight: bold;
+    text-align: center;
+}
+
+.test-status.running {
+    background: #FFF3E0;
+    color: #F57C00;
+    border-left-color: #FF9800;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+.test-results {
+    background: #F8F9FA;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #DEE2E6;
+}
+
+.test-results h5 {
+    color: #28A745;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.result-card {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    border: 1px solid #E9ECEF;
+    transition: all 0.3s ease;
+}
+
+.result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.result-title {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.result-value {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #28A745;
+}
+
+.result-value.warning {
+    color: #FFC107;
+}
+
+.result-value.danger {
+    color: #DC3545;
+}
+
+.test-interpretation {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #28A745;
+}
+
+.test-interpretation h6 {
+    color: #28A745;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.test-interpretation .interpretation-good {
+    color: #28A745;
+    font-weight: bold;
+}
+
+.test-interpretation .interpretation-warning {
+    color: #FFC107;
+    font-weight: bold;
+}
+
+.test-interpretation .interpretation-bad {
+    color: #DC3545;
+    font-weight: bold;
+}
+
+.test-details {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border-left: 4px solid #6C757D;
+}
+
+.test-details h6 {
+    color: #6C757D;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.test-details pre {
+    background: #F8F9FA;
+    padding: 15px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+/* Адаптивність для тестів */
+@media (max-width: 768px) {
+    .results-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .test-controls .form-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .test-controls .form-group > * {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .test-section {
+        padding: 15px;
+    }
+}
+
+/* Анімація для статистики */
+.result-value {
+    transition: all 0.3s ease;
+}
+
+.result-value.updated {
+    animation: highlightUpdate 0.6s ease;
+}
+
+@keyframes highlightUpdate {
+    0% {
+        transform: scale(1);
+        color: #28A745;
+    }
+    50% {
+        transform: scale(1.1);
+        color: #FF6B35;
+    }
+    100% {
+        transform: scale(1);
+        color: #28A745;
+    }
+}
+/* Стилі для таблиці розподілу учасників */
+.participants-stats {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #17A2B8;
+}
+
+.participants-stats h6 {
+    color: #17A2B8;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.distribution-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+.distribution-table th,
+.distribution-table td {
+    padding: 8px 12px;
+    text-align: center;
+    border: 1px solid #DEE2E6;
+}
+
+.distribution-table th {
+    background: #F8F9FA;
+    font-weight: bold;
+    color: #495057;
+}
+
+.distribution-table tr:nth-child(even) {
+    background: #F8F9FA;
+}
+
+.distribution-table tr:hover {
+    background: #E3F2FD;
+}
+
+.participants-requirement {
+    margin-top: 10px;
+    padding: 10px;
+    background: #FFF3CD;
+    border-radius: 5px;
+    border-left: 4px solid #FFC107;
+}
+
+.participants-requirement small {
+    color: #856404;
+    font-weight: 500;
+}
+
+/* Анімація для значень відхилень */
+.deviation-high {
+    color: #DC3545;
+    font-weight: bold;
+}
+
+.deviation-medium {
+    color: #FFC107;
+    font-weight: bold;
+}
+
+.deviation-low {
+    color: #28A745;
+}
+
+/* ===== СТИЛІ ДЛЯ ТЕСТУ СПРАВЕДЛИВОСТІ ===== */
+
+/* Стилі для бала справедливості */
+.score-excellent {
+    color: #28A745;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(40, 167, 69, 0.3);
+}
+
+.score-good {
+    color: #20C997;
+    font-weight: bold;
+}
+
+.score-fair {
+    color: #FFC107;
+    font-weight: bold;
+}
+
+.score-poor {
+    color: #FD7E14;
+    font-weight: bold;
+}
+
+.score-bad {
+    color: #DC3545;
+    font-weight: bold;
+    animation: scoreWarning 1s ease-in-out infinite alternate;
+}
+
+@keyframes scoreWarning {
+    from {
+        text-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+    }
+    to {
+        text-shadow: 0 0 10px rgba(220, 53, 69, 0.6);
+    }
+}
+
+/* Стилі для статусів у довірчих інтервалах */
+.status-good {
+    color: #28A745;
+    font-weight: bold;
+    text-shadow: 0 0 3px rgba(40, 167, 69, 0.2);
+}
+
+.status-bad {
+    color: #DC3545;
+    font-weight: bold;
+    text-shadow: 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+/* Стилі для таблиці довірчих інтервалів */
+.fairness-intervals {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #6F42C1;
+}
+
+.fairness-intervals h6 {
+    color: #6F42C1;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+}
+
+.fairness-intervals .distribution-table {
+    font-size: 0.85em;
+}
+
+.fairness-intervals .distribution-table th {
+    background: linear-gradient(135deg, #6F42C1 0%, #8A63D2 100%);
+    color: white;
+}
+
+.fairness-intervals .distribution-table td {
+    vertical-align: middle;
+}
+
+/* Додаткова анімація для тесту справедливості */
+.fairness-test-results {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== СТИЛІ ДЛЯ ВІДКЛЮЧЕННЯ АНІМАЦІЙ POPUP ===== */
+
+/* Відключення анімації появи popup */
+.popup-content.no-appear-animation {
+    animation: none !important;
+    transform: scale(1) rotate(0deg) !important;
+    opacity: 1 !important;
+}
+
+/* Відключення внутрішніх анімацій popup */
+.popup-content.no-internal-animations .trophy-icon {
+    animation: none !important;
+}
+
+.popup-content.no-internal-animations .popup-title {
+    animation: none !important;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.popup-content.no-internal-animations .celebration-emoji {
+    animation: none !important;
+}
+
+.popup-content.no-internal-animations .confetti {
+    display: none !important;
+}
+
+.popup-content.no-internal-animations .confetti-container {
+    display: none !important;
+}
+
+/* Стилі для інтерпретації справедливості */
+.test-interpretation .interpretation-good {
+    background: linear-gradient(135deg, #D4EDDA 0%, #C3E6CB 100%);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #28A745;
+    margin-bottom: 10px;
+}
+
+.test-interpretation .interpretation-warning {
+    background: linear-gradient(135deg, #FFF3CD 0%, #FFEAA7 100%);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #FFC107;
+    margin-bottom: 10px;
+}
+
+.test-interpretation .interpretation-bad {
+    background: linear-gradient(135deg, #F8D7DA 0%, #F5C6CB 100%);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #DC3545;
+    margin-bottom: 10px;
+    animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(220, 53, 69, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
+    }
+}
+
