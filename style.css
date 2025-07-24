@@ -432,6 +432,15 @@ body {
     text-overflow: ellipsis; /* Додає "..." в кінці */
 }
 
+/* Підтримка багаторядкового тексту для відображення підрозділу */
+.drum-content.multi-line {
+    white-space: pre-line; /* Дозволяє перенос рядка за \n */
+    text-overflow: unset; /* Вимикає ellipsis для багаторядкового тексту */
+    line-height: 1.3; /* Зменшений міжрядковий інтервал для компактності */
+    text-align: center; /* Центрування тексту */
+    font-size: 1.1em; /* Трохи менший шрифт для кращого розміщення */
+}
+
 .drum-content.spinning {
     animation: spin 3s linear infinite; /* Оновлено з 2s до 3s */
 }
