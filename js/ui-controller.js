@@ -105,6 +105,7 @@ function showError(elementId, message) {
 function updateDisplay() {
     updateParticipantsList();
     updatePrizesList();
+    updateSortButtonsState();
 }
 
 function updateParticipantsList() {
@@ -125,6 +126,31 @@ function updateParticipantsList() {
             </td>
         `;
         tbody.appendChild(row);
+    });
+}
+
+// Оновлення стану кнопок сортування
+function updateSortButtonsState() {
+    const sortButtons = document.querySelectorAll('.sort-btn');
+    const sortState = window.DataManager.participantsSortState;
+    
+    sortButtons.forEach(button => {
+        const field = button.getAttribute('data-field');
+        const arrow = button.querySelector('.sort-arrow');
+        
+        if (sortState.isActive && sortState.field === field) {
+            // Активна кнопка
+            button.classList.add('active');
+            if (arrow) {
+                arrow.className = `sort-arrow ${sortState.direction}`;
+            }
+        } else {
+            // Неактивна кнопка
+            button.classList.remove('active');
+            if (arrow) {
+                arrow.className = 'sort-arrow';
+            }
+        }
     });
 }
 
@@ -491,6 +517,7 @@ window.UIController = {
     updateParticipantsList,
     updatePrizesList,
     updateResultsDisplay,
+    updateSortButtonsState,
     
     // Налаштування
     setupFormHandlers,
@@ -524,3 +551,8 @@ window.updateDisplay = updateDisplay;
 window.updateParticipantsList = updateParticipantsList;
 window.updatePrizesList = updatePrizesList;
 window.updateResultsDisplay = updateResultsDisplay;
+window.updateSortButtonsState = updateSortButtonsState;
+
+// Глобальні функції для сортування та перемішування (для HTML onclick)
+window.sortParticipants = window.DataManager.sortParticipants;
+window.shuffleParticipants = window.DataManager.shuffleParticipants;

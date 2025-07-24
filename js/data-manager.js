@@ -14,6 +14,13 @@ let currentRound = 0;
 let isRaffleActive = false;
 let hasUnsavedChanges = false;
 
+// Стан сортування учасників
+let participantsSortState = {
+    field: null,        // 'name', 'division', 'weight', null
+    direction: 'asc',   // 'asc', 'desc'
+    isActive: false     // чи активне сортування
+};
+
 // Константи для localStorage
 const STORAGE_KEYS = {
     PARTICIPANTS: 'raffle_participants',
@@ -26,7 +33,8 @@ const STORAGE_KEYS = {
     RAFFLE_STATE: 'raffle_state',
     LAST_SAVE: 'raffle_last_save',
     ANIMATION_SETTINGS: 'raffle_animation_settings',
-    ACTIVE_TAB: 'raffle_active_tab'
+    ACTIVE_TAB: 'raffle_active_tab',
+    PARTICIPANTS_SORT: 'raffle_participants_sort'
     // BACKUP видалено - немає функції відновлення, автозбереження достатньо
 };
 
@@ -141,6 +149,9 @@ function loadFromStorage() {
         }
 
         hasUnsavedChanges = false;
+        
+        // Завантажити стан сортування
+        loadSortState();
         
         // Додаткова перевірка для відновлення стану кнопки "наступний раунд"
         // після оновлення сторінки під час активного розіграшу
@@ -333,6 +344,9 @@ function addParticipant() {
     if (divisionInput) divisionInput.value = '';
     if (weightInput) weightInput.value = '1';
     
+    // Застосувати збережене сортування до нового учасника
+    applySavedSorting();
+    
     // Оновити відображення
     if (typeof updateDisplay === 'function') updateDisplay();
     if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
@@ -345,6 +359,168 @@ function removeParticipant(index) {
         if (typeof updateDisplay === 'function') updateDisplay();
         if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         markAsChanged();
+    }
+}
+
+// ===== СОРТУВАННЯ ТА ПЕРЕМІШУВАННЯ УЧАСНИКІВ =====
+
+// Криптографічно безпечний генератор випадкових чисел
+function secureRandom() {
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const array = new Uint32Array(1);
+        crypto.getRandomValues(array);
+        return array[0] / (0xffffffff + 1);
+    } else {
+        return Math.random();
+    }
+}
+
+// Сортування учасників за вказаним полем
+function sortParticipants(field, direction = null) {
+    if (participants.length === 0) {
+        console.warn('Немає учасників для сортування');
+        return;
+    }
+
+    // Визначити напрямок сортування
+    if (direction === null) {
+        if (participantsSortState.field === field && participantsSortState.isActive) {
+            // Якщо клікнули по активному полю, змінити напрямок
+            direction = participantsSortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            // Нове поле - почати з зростання
+            direction = 'asc';
+        }
+    }
+
+    // Оновити стан сортування
+    participantsSortState = {
+        field: field,
+        direction: direction,
+        isActive: true
+    };
+
+    // Виконати сортування
+    participants.sort((a, b) => {
+        let valueA, valueB;
+
+        switch (field) {
+            case 'name':
+                valueA = a.name || '';
+                valueB = b.name || '';
+                return direction === 'asc'
+                    ? valueA.localeCompare(valueB, 'uk', { numeric: true, sensitivity: 'base' })
+                    : valueB.localeCompare(valueA, 'uk', { numeric: true, sensitivity: 'base' });
+
+            case 'division':
+                valueA = a.division || 'Не вказано';
+                valueB = b.division || 'Не вказано';
+                return direction === 'asc'
+                    ? valueA.localeCompare(valueB, 'uk', { numeric: true, sensitivity: 'base' })
+                    : valueB.localeCompare(valueA, 'uk', { numeric: true, sensitivity: 'base' });
+
+            case 'weight':
+                valueA = a.weight || 0;
+                valueB = b.weight || 0;
+                return direction === 'asc' ? valueA - valueB : valueB - valueA;
+
+            default:
+                return 0;
+        }
+    });
+
+    // Оновити відображення
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof updateSortButtonsState === 'function') updateSortButtonsState();
+    
+    // Зберегти зміни
+    saveSortState();
+    markAsChanged();
+
+    console.log(`Учасників відсортовано за полем "${field}" у напрямку "${direction}"`);
+}
+
+// Перемішування учасників у випадковому порядку
+function shuffleParticipants() {
+    if (participants.length === 0) {
+        console.warn('Немає учасників для перемішування');
+        return;
+    }
+
+    // Алгоритм Fisher-Yates з криптографічною випадковістю
+    const array = [...participants];
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(secureRandom() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    
+    participants.length = 0;
+    participants.push(...array);
+
+    // Скинути стан сортування
+    participantsSortState = {
+        field: null,
+        direction: 'asc',
+        isActive: false
+    };
+
+    // Оновити відображення
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof updateSortButtonsState === 'function') updateSortButtonsState();
+    
+    // Зберегти зміни
+    saveSortState();
+    markAsChanged();
+
+    console.log('Учасників перемішано у випадковому порядку');
+}
+
+// Збереження стану сортування в localStorage
+function saveSortState() {
+    try {
+        const sortData = {
+            ...participantsSortState,
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEYS.PARTICIPANTS_SORT, JSON.stringify(sortData));
+    } catch (error) {
+        console.error('Помилка збереження стану сортування:', error);
+    }
+}
+
+// Завантаження стану сортування з localStorage
+function loadSortState() {
+    try {
+        const savedSort = localStorage.getItem(STORAGE_KEYS.PARTICIPANTS_SORT);
+        if (savedSort) {
+            const sortData = JSON.parse(savedSort);
+            participantsSortState = {
+                field: sortData.field || null,
+                direction: sortData.direction || 'asc',
+                isActive: sortData.isActive || false
+            };
+            
+            // Оновити UI кнопки після завантаження DOM
+            setTimeout(() => {
+                if (typeof updateSortButtonsState === 'function') {
+                    updateSortButtonsState();
+                }
+            }, 100);
+        }
+    } catch (error) {
+        console.error('Помилка завантаження стану сортування:', error);
+        participantsSortState = {
+            field: null,
+            direction: 'asc',
+            isActive: false
+        };
+    }
+}
+
+// Застосування збереженого сортування до нових учасників
+function applySavedSorting() {
+    if (participantsSortState.isActive && participantsSortState.field && participants.length > 0) {
+        sortParticipants(participantsSortState.field, participantsSortState.direction);
     }
 }
 
@@ -612,6 +788,9 @@ function handleExcelLoad(event) {
                 }
             }
 
+            // Застосувати збережене сортування після імпорту
+            applySavedSorting();
+            
             // Оновити відображення
             if (typeof updateDisplay === 'function') updateDisplay();
             if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
@@ -814,7 +993,15 @@ window.DataManager = {
     exportToExcel,
     exportResultsToExcel,
     clearResults,
-    restoreRaffleButtonState
+    restoreRaffleButtonState,
+    
+    // Функції сортування та перемішування
+    sortParticipants,
+    shuffleParticipants,
+    saveSortState,
+    loadSortState,
+    applySavedSorting,
+    get participantsSortState() { return participantsSortState; }
 };
 
 // Глобальні функції видалено - використовуються через обгортки в main.js або DataManager модуль

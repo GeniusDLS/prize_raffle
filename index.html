@@ -42,7 +42,7 @@
 
             <!-- Навігація підзакладок даних -->
             <div class="data-nav">
-                <button class="data-tab active" onclick="showDataTab('participants')">👥 Учасники</button>
+                <button class="data-tab active" onclick="showDataTab('participants')">👨🏻👩🏼 Учасники</button>
                 <button class="data-tab" onclick="showDataTab('prizes')">🎁 Призи</button>
             </div>
 
@@ -56,6 +56,26 @@
                         <button class="btn btn-primary" onclick="addParticipant()">Додати</button>
                     </div>
                     <div id="participants-error" class="error-message" style="display: none;"></div>
+                    
+                    <!-- Контроли сортування та перемішування -->
+                    <div class="participants-controls">
+                        <div class="sort-controls">
+                            <span class="sort-label">Сортувати за:</span>
+                            <button class="sort-btn" data-field="name" onclick="sortParticipants('name')">
+                                Ім'я <span class="sort-arrow"></span>
+                            </button>
+                            <button class="sort-btn" data-field="division" onclick="sortParticipants('division')">
+                                Підрозділ <span class="sort-arrow"></span>
+                            </button>
+                            <button class="sort-btn" data-field="weight" onclick="sortParticipants('weight')">
+                                Вага <span class="sort-arrow"></span>
+                            </button>
+                        </div>
+                        <button class="shuffle-btn" onclick="shuffleParticipants()" title="Перемішати учасників у випадковому порядку">
+                            🔀 Перемішати
+                        </button>
+                    </div>
+                    
                     <div class="table-container">
                         <table class="data-table compact-table">
                             <thead>
@@ -119,13 +139,13 @@
 
                 <div class="drums-container">
                     <div class="drum">
-                        <h3>👤 Учасник</h3>
+                        <h3><span class="emoji">👨🏻</span> Учасник <span class="emoji">👩🏼</span></h3>
                         <div class="drum-window">
                             <div class="drum-content" id="participant-drum">Готовий до розіграшу!</div>
                         </div>
                     </div>
                     <div class="drum">
-                        <h3>🎁 Приз</h3>
+                        <h3><span class="emoji">🎁</span> Приз <span class="emoji">🎁</span></h3>
                         <div class="drum-window">
                             <div class="drum-content" id="prize-drum">Готовий до розіграшу!</div>
                         </div>
