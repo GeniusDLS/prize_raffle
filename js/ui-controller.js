@@ -359,6 +359,7 @@ function initializeUI() {
     setupButtons();
     setupExcelInput();
     setupInitialPage();
+    setupDataTabs();
     
     // Ініціалізувати обробники popup
     if (window.RaffleEngine && window.RaffleEngine.initializePopupHandlers) {
@@ -414,6 +415,58 @@ function showSettingsTab(tabId) {
     if (targetContent) targetContent.classList.add('active');
 }
 
+// ===== ФУНКЦІЇ ПІДЗАКЛАДОК ДАНИХ =====
+
+function showDataTab(tabName) {
+    // Приховати всі підзакладки даних
+    document.querySelectorAll('.data-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Деактивувати всі кнопки підзакладок даних
+    document.querySelectorAll('.data-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Показати вибрану підзакладку
+    const targetContent = document.getElementById(tabName + '-tab');
+    if (targetContent) {
+        targetContent.classList.add('active');
+    }
+    
+    // Активувати відповідну кнопку
+    const targetTab = document.querySelector(`[onclick="showDataTab('${tabName}')"]`);
+    if (targetTab) {
+        targetTab.classList.add('active');
+    }
+    
+    // Зберегти активну підзакладку даних
+    saveActiveDataTab(tabName);
+}
+
+function saveActiveDataTab(tabName) {
+    try {
+        localStorage.setItem('raffle_active_data_tab', tabName);
+    } catch (error) {
+        console.error('Помилка збереження активної підзакладки даних:', error);
+    }
+}
+
+function loadActiveDataTab() {
+    try {
+        return localStorage.getItem('raffle_active_data_tab') || 'participants'; // За замовчуванням - учасники
+    } catch (error) {
+        console.error('Помилка завантаження активної підзакладки даних:', error);
+        return 'participants';
+    }
+}
+
+function setupDataTabs() {
+    // Відновити збережену активну підзакладку даних
+    const savedDataTab = loadActiveDataTab();
+    showDataTab(savedDataTab);
+}
+
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 // Утилітарні функції видалено як невикористовувані
 
@@ -449,6 +502,12 @@ window.UIController = {
     hideSettings,
     showSettingsTab,
     
+    // Підзакладки даних
+    showDataTab,
+    saveActiveDataTab,
+    loadActiveDataTab,
+    setupDataTabs,
+    
     // Ініціалізація
     initializeUI
     
@@ -457,6 +516,7 @@ window.UIController = {
 
 // Також зробити функції доступними напряму для обратної сумісності
 window.showPage = showPage;
+window.showDataTab = showDataTab;
 window.initializeRaffleStats = initializeRaffleStats;
 window.updateRaffleStats = updateRaffleStats;
 window.showError = showError;

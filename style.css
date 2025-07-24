@@ -207,6 +207,11 @@ body {
     border-bottom: 1px solid #eee;
 }
 
+/* Компактна таблиця з зменшеним міжрядковим інтервалом */
+.compact-table td {
+    padding: 4px 15px;
+}
+
 .data-table tr:hover {
     background: #E8F5E8;
 }
@@ -1565,3 +1570,82 @@ body {
     }
 }
 
+
+/* ===== СТИЛІ ДЛЯ НАВІГАЦІЇ ПІДЗАКЛАДОК ДАНИХ ===== */
+.data-nav {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.data-tab {
+    flex: 1;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: #666;
+    font-size: 14px;
+}
+
+.data-tab.active {
+    background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(62, 180, 73, 0.3);
+}
+
+.data-tab:hover:not(.active) {
+    background: #E8F5E8;
+    color: #2E8B35;
+}
+
+/* ===== КОНТЕНТ ПІДЗАКЛАДОК ДАНИХ ===== */
+.data-content {
+    display: none;
+}
+
+.data-content.active {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* ===== КОНТЕЙНЕР ТАБЛИЦІ З ПРОКРУТКОЮ ===== */
+.table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 15px;
+}
+
+/* Фіксований заголовок таблиці при прокрутці */
+.table-container .data-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
+}
+
+/* Адаптивність для навігації підзакладок даних */
+@media (max-width: 768px) {
+    .data-nav {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .data-tab {
+        text-align: center;
+    }
+    
+    .table-container {
+        max-height: 300px;
+    }
+}

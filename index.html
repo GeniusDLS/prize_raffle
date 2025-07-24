@@ -40,46 +40,60 @@
                 </p>
             </div>
 
-            <div class="form-section">
-                <h3>👥 Учасники</h3>
-                <div class="form-group">
-                    <input type="text" id="participant-name" placeholder="Ім'я учасника" style="flex: 2">
-                    <input type="text" id="participant-division" placeholder="Підрозділ" style="flex: 2">
-                    <input type="number" id="participant-weight" placeholder="Вага" min="1" value="1" style="flex: 1">
-                    <button class="btn btn-primary" onclick="addParticipant()">Додати</button>
-                </div>
-                <div id="participants-error" class="error-message" style="display: none;"></div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Ім'я</th>
-                            <th>Підрозділ</th>
-                            <th>Вага</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="participants-list"></tbody>
-                </table>
+            <!-- Навігація підзакладок даних -->
+            <div class="data-nav">
+                <button class="data-tab active" onclick="showDataTab('participants')">👥 Учасники</button>
+                <button class="data-tab" onclick="showDataTab('prizes')">🎁 Призи</button>
             </div>
 
-            <div class="form-section">
-                <h3>🎁 Призи</h3>
-                <div class="form-group">
-                    <input type="text" id="prize-name" placeholder="Назва призу" style="flex: 2">
-                    <input type="number" id="prize-count" placeholder="Кількість" min="1" value="1" style="flex: 1">
-                    <button class="btn btn-primary" onclick="addPrize()">Додати</button>
+            <!-- Підзакладка учасників -->
+            <div id="participants-tab" class="data-content active">
+                <div class="form-section">
+                    <div class="form-group">
+                        <input type="text" id="participant-name" placeholder="Ім'я учасника" style="flex: 2">
+                        <input type="text" id="participant-division" placeholder="Підрозділ" style="flex: 2">
+                        <input type="number" id="participant-weight" placeholder="Вага" min="1" value="1" style="flex: 1">
+                        <button class="btn btn-primary" onclick="addParticipant()">Додати</button>
+                    </div>
+                    <div id="participants-error" class="error-message" style="display: none;"></div>
+                    <div class="table-container">
+                        <table class="data-table compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Ім'я</th>
+                                    <th>Підрозділ</th>
+                                    <th>Вага</th>
+                                    <th>Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participants-list"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div id="prizes-error" class="error-message" style="display: none;"></div>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Назва</th>
-                            <th>Кількість</th>
-                            <th>Дії</th>
-                        </tr>
-                    </thead>
-                    <tbody id="prizes-list"></tbody>
-                </table>
+            </div>
+
+            <!-- Підзакладка призів -->
+            <div id="prizes-tab" class="data-content">
+                <div class="form-section">
+                    <div class="form-group">
+                        <input type="text" id="prize-name" placeholder="Назва призу" style="flex: 2">
+                        <input type="number" id="prize-count" placeholder="Кількість" min="1" value="1" style="flex: 1">
+                        <button class="btn btn-primary" onclick="addPrize()">Додати</button>
+                    </div>
+                    <div id="prizes-error" class="error-message" style="display: none;"></div>
+                    <div class="table-container">
+                        <table class="data-table compact-table">
+                            <thead>
+                                <tr>
+                                    <th>Назва</th>
+                                    <th>Кількість</th>
+                                    <th>Дії</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prizes-list"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <input type="file" id="excel-input" accept=".xlsx,.xls" style="display: none;" onchange="window.DataManager.handleExcelLoad(event)">
