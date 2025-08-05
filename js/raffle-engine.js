@@ -728,11 +728,8 @@ function loadAnimationSettings() {
 function initializePopupHandlers() {
     const popup = document.getElementById('winner-popup');
     if (popup) {
-        const overlay = popup.querySelector('.popup-overlay');
-        
-        if (overlay) {
-            overlay.addEventListener('click', hideWinnerPopup);
-        }
+        // Видалено автоматичне закриття при кліку по overlay
+        // Popup тепер закривається тільки кнопкою "Далі" або Escape
         
         // Закрити popup при натисканні Escape
         document.addEventListener('keydown', function(e) {
