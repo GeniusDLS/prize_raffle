@@ -229,6 +229,55 @@ window.resetAnimationSettings = function() {
     if (window.RaffleEngine) window.RaffleEngine.resetAnimationSettings();
 };
 
+// Функції тестових даних (пресети)
+window.showTestDataModal = function() {
+    const modal = document.getElementById('test-preset-modal');
+    if (!modal) return;
+
+    // Сформувати картки пресетів динамічно
+    const presets = window.DataManager.TEST_DATA_PRESETS;
+    const container = document.getElementById('preset-cards-list');
+    if (container && presets) {
+        container.innerHTML = Object.entries(presets).map(([id, preset]) => {
+            const totalPrizes = preset.prizes.reduce((s, p) => s + p.count, 0);
+            return `<div class="preset-card" onclick="applyTestPreset('${id}')">
+                <div class="preset-card-icon">${preset.label.split(' ')[0]}</div>
+                <div class="preset-card-body">
+                    <div class="preset-card-title">${escapeHtml(preset.label.replace(/^\S+\s/, ''))}</div>
+                    <div class="preset-card-desc">${escapeHtml(preset.description)}</div>
+                    <div class="preset-card-stats">
+                        <span>👥 ${preset.participants.length} учасників</span>
+                        <span>🎁 ${totalPrizes} призів</span>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    modal.style.display = 'flex';
+};
+
+window.closeTestDataModal = function() {
+    const modal = document.getElementById('test-preset-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.hideTestDataModal = function(event) {
+    // Закрити при кліку на оверлей (не на вміст модалі)
+    if (event.target === document.getElementById('test-preset-modal')) {
+        window.closeTestDataModal();
+    }
+};
+
+window.applyTestPreset = function(presetId) {
+    window.closeTestDataModal();
+    if (window.DataManager) {
+        window.DataManager.loadTestPreset(presetId);
+        // Переключитися на вкладку учасників для показу результату
+        if (typeof showDataTab === 'function') showDataTab('participants');
+    }
+};
+
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 
 // Функція для перевірки стану додатку

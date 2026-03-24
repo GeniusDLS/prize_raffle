@@ -33,6 +33,7 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="loadExcelData()">📊 Імпорт з Excel</button>
                     <button class="btn btn-primary" onclick="exportToExcel()">📋 Експорт в Excel</button>
+                    <button class="btn btn-success" onclick="showTestDataModal()">🧪 Тестові дані</button>
                     <button class="btn btn-warning" onclick="clearStoredData()">🗑️ Очистити збережені дані</button>
                     <button class="btn btn-secondary" onclick="showSettings()">⚙️ Налаштування</button>
                 </div>
@@ -118,6 +119,18 @@
             </div>
 
             <input type="file" id="excel-input" accept=".xlsx,.xls" style="display: none;" onchange="window.DataManager.handleExcelLoad(event)">
+        </div>
+
+        <!-- Модальне вікно вибору тестового пресету -->
+        <div id="test-preset-modal" class="preset-modal-overlay" style="display: none;" onclick="hideTestDataModal(event)">
+            <div class="preset-modal">
+                <div class="preset-modal-header">
+                    <h3>🧪 Тестові дані</h3>
+                    <button class="preset-modal-close" onclick="closeTestDataModal()" title="Закрити">✕</button>
+                </div>
+                <p class="preset-modal-subtitle">Оберіть пресет для заповнення учасників та призів</p>
+                <div class="preset-cards" id="preset-cards-list"></div>
+            </div>
         </div>
 
         <!-- Сторінка розіграшу -->
