@@ -3,6 +3,22 @@
  * Відповідає за інтерфейс користувача та відображення даних
  */
 
+// ===== УТИЛІТАРНІ ФУНКЦІЇ =====
+
+/**
+ * Екранування HTML-спецсимволів для захисту від XSS
+ * Застосовується до всіх даних користувача перед вставкою в innerHTML
+ */
+function escapeHtml(str) {
+    if (str === null || str === undefined) { return ''; }
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // ===== НАВІГАЦІЯ =====
 
 function showPage(pageId) {
@@ -34,11 +50,9 @@ function showPage(pageId) {
         updateResultsDisplay();
     } else if (pageId === 'settings') {
         // Завантажити налаштування анімації до форми при відкритті сторінки налаштувань
-        setTimeout(() => {
-            if (window.RaffleEngine && window.RaffleEngine.loadAnimationSettingsToForm) {
-                window.RaffleEngine.loadAnimationSettingsToForm();
-            }
-        }, 50);
+        if (window.RaffleEngine && window.RaffleEngine.loadAnimationSettingsToForm) {
+            window.RaffleEngine.loadAnimationSettingsToForm();
+        }
     }
 }
 
@@ -118,9 +132,9 @@ function updateParticipantsList() {
     participants.forEach((participant, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${participant.name}</td>
-            <td>${participant.division || 'Не вказано'}</td>
-            <td>${participant.weight}</td>
+            <td>${escapeHtml(participant.name)}</td>
+            <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
+            <td>${escapeHtml(participant.weight)}</td>
             <td>
                 <button class="btn btn-danger" onclick="removeParticipant(${index})">Видалити</button>
             </td>
@@ -164,8 +178,8 @@ function updatePrizesList() {
     prizes.forEach((prize, index) => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${prize.name}</td>
-            <td>${prize.count}</td>
+            <td>${escapeHtml(prize.name)}</td>
+            <td>${escapeHtml(prize.count)}</td>
             <td>
                 <button class="btn btn-danger" onclick="removePrize(${index})">Видалити</button>
             </td>
@@ -198,7 +212,7 @@ function updateResultsDisplay() {
     resultsList.innerHTML = results.map(result => `
         <div class="result-item">
             <span class="round-indicator">Раунд ${result.round}</span>
-            <strong>${result.winner}</strong>${result.winnerDivision ? ` (Підрозділ: ${result.winnerDivision})` : ''} виграв <strong>${result.prize}</strong>
+            <strong>${escapeHtml(result.winner)}</strong>${result.winnerDivision ? ` (Підрозділ: ${escapeHtml(result.winnerDivision)})` : ''} виграв <strong>${escapeHtml(result.prize)}</strong>
         </div>
     `).join('');
 }
@@ -392,7 +406,7 @@ function initializeUI() {
         window.RaffleEngine.initializePopupHandlers();
     }
     
-    console.log('UI Controller ініціалізовано');
+    window.Logger.log('[UIController]', 'UI Controller ініціалізовано');
 }
 
 // ===== ЗБЕРЕЖЕННЯ АКТИВНОЇ ВКЛАДКИ =====
@@ -401,7 +415,7 @@ function saveActiveTab(pageId) {
     try {
         localStorage.setItem('raffle_active_tab', pageId);
     } catch (error) {
-        console.error('Помилка збереження активної вкладки:', error);
+        window.Logger.error('[UIController]', 'Помилка збереження активної вкладки:', error);
     }
 }
 
@@ -409,7 +423,7 @@ function loadActiveTab() {
     try {
         return localStorage.getItem('raffle_active_tab') || 'data'; // За замовчуванням - вкладка даних
     } catch (error) {
-        console.error('Помилка завантаження активної вкладки:', error);
+        window.Logger.error('[UIController]', 'Помилка завантаження активної вкладки:', error);
         return 'data';
     }
 }
@@ -474,7 +488,7 @@ function saveActiveDataTab(tabName) {
     try {
         localStorage.setItem('raffle_active_data_tab', tabName);
     } catch (error) {
-        console.error('Помилка збереження активної підзакладки даних:', error);
+        window.Logger.error('[UIController]', 'Помилка збереження активної підзакладки даних:', error);
     }
 }
 
@@ -482,7 +496,7 @@ function loadActiveDataTab() {
     try {
         return localStorage.getItem('raffle_active_data_tab') || 'participants'; // За замовчуванням - учасники
     } catch (error) {
-        console.error('Помилка завантаження активної підзакладки даних:', error);
+        window.Logger.error('[UIController]', 'Помилка завантаження активної підзакладки даних:', error);
         return 'participants';
     }
 }

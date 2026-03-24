@@ -3,6 +3,20 @@
  * Відповідає за управління даними, збереження та Excel операції
  */
 
+// ===== ЛОГЕР =====
+
+/**
+ * Централізований логер для всіх модулів
+ * Встановити enabled = false для вимкнення debug-логів (log/warn)
+ * Помилки (error) виводяться завжди
+ */
+window.Logger = {
+    enabled: true,
+    log: function(...args) { if (window.Logger.enabled) { console.log(...args); } },
+    warn: function(...args) { if (window.Logger.enabled) { console.warn(...args); } },
+    error: function(...args) { console.error(...args); }
+};
+
 // ===== ГЛОБАЛЬНІ ЗМІННІ ТА КОНСТАНТИ =====
 
 let participants = [];
@@ -72,7 +86,7 @@ function saveToStorage() {
         showAutoSaveStatus('saved');
         hasUnsavedChanges = false;
     } catch (error) {
-        console.error('Помилка збереження:', error);
+        window.Logger.error('[DataManager]', 'Помилка збереження:', error);
         showAutoSaveStatus('error');
     }
 }
@@ -129,7 +143,7 @@ function loadFromStorage() {
                     if (newBtn) newBtn.style.display = raffleState.newBtnVisible ? 'inline-block' : 'none';
                     
                 } catch (e) {
-                    console.error('Помилка відновлення стану розіграшу:', e);
+                    window.Logger.error('[DataManager]', 'Помилка відновлення стану розіграшу:', e);
                 }
             }, 100); // Невелика затримка для завантаження DOM
         }
@@ -137,9 +151,9 @@ function loadFromStorage() {
         const lastSave = localStorage.getItem(STORAGE_KEYS.LAST_SAVE);
         if (lastSave) {
             const saveDate = new Date(lastSave);
-            console.log('Дані відновлено з:', saveDate.toLocaleString('uk-UA'));
+            window.Logger.log('[DataManager]', 'Дані відновлено з:', saveDate.toLocaleString('uk-UA'));
             if (isRaffleActive) {
-                console.log('Відновлено активний розіграш. Поточний раунд:', currentRound);
+                window.Logger.log('[DataManager]', 'Відновлено активний розіграш. Поточний раунд:', currentRound);
                 
                 // Показати повідомлення про відновлення
                 setTimeout(() => {
@@ -160,7 +174,7 @@ function loadFromStorage() {
         }, 200); // Затримка для завантаження DOM
         
     } catch (error) {
-        console.error('Помилка завантаження:', error);
+        window.Logger.error('[DataManager]', 'Помилка завантаження:', error);
     }
 }
 
@@ -179,7 +193,7 @@ function restoreRaffleButtonState() {
         if (startBtn) startBtn.style.display = 'none';
         if (newBtn) newBtn.style.display = 'none';
         
-        console.log('Відновлено стан кнопки "наступний раунд" для активного розіграшу');
+        window.Logger.log('[DataManager]', 'Відновлено стан кнопки "наступний раунд" для активного розіграшу');
     } else if (currentRound === 0) {
         // Якщо розіграш тільки розпочався, але ще не було раундів
         if (startBtn) startBtn.style.display = 'none';
@@ -354,6 +368,10 @@ function addParticipant() {
 }
 
 function removeParticipant(index) {
+    if (index < 0 || index >= participants.length) {
+        window.Logger.error('[DataManager]', `removeParticipant: невірний індекс ${index}`);
+        return;
+    }
     if (confirm('Видалити цього учасника?')) {
         participants.splice(index, 1);
         if (typeof updateDisplay === 'function') updateDisplay();
@@ -364,21 +382,10 @@ function removeParticipant(index) {
 
 // ===== СОРТУВАННЯ ТА ПЕРЕМІШУВАННЯ УЧАСНИКІВ =====
 
-// Криптографічно безпечний генератор випадкових чисел
-function secureRandom() {
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return array[0] / (0xffffffff + 1);
-    } else {
-        return Math.random();
-    }
-}
-
 // Сортування учасників за вказаним полем
 function sortParticipants(field, direction = null) {
     if (participants.length === 0) {
-        console.warn('Немає учасників для сортування');
+        window.Logger.warn('[DataManager]', 'Немає учасників для сортування');
         return;
     }
 
@@ -437,20 +444,20 @@ function sortParticipants(field, direction = null) {
     saveSortState();
     markAsChanged();
 
-    console.log(`Учасників відсортовано за полем "${field}" у напрямку "${direction}"`);
+    window.Logger.log('[DataManager]', `Учасників відсортовано за полем "${field}" у напрямку "${direction}"`);
 }
 
 // Перемішування учасників у випадковому порядку
 function shuffleParticipants() {
     if (participants.length === 0) {
-        console.warn('Немає учасників для перемішування');
+        window.Logger.warn('[DataManager]', 'Немає учасників для перемішування');
         return;
     }
 
     // Алгоритм Fisher-Yates з криптографічною випадковістю
     const array = [...participants];
     for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(secureRandom() * (i + 1));
+        const j = Math.floor(window.RaffleEngine.secureRandom() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
     
@@ -472,7 +479,7 @@ function shuffleParticipants() {
     saveSortState();
     markAsChanged();
 
-    console.log('Учасників перемішано у випадковому порядку');
+    window.Logger.log('[DataManager]', 'Учасників перемішано у випадковому порядку');
 }
 
 // Збереження стану сортування в localStorage
@@ -484,7 +491,7 @@ function saveSortState() {
         };
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS_SORT, JSON.stringify(sortData));
     } catch (error) {
-        console.error('Помилка збереження стану сортування:', error);
+        window.Logger.error('[DataManager]', 'Помилка збереження стану сортування:', error);
     }
 }
 
@@ -508,7 +515,7 @@ function loadSortState() {
             }, 100);
         }
     } catch (error) {
-        console.error('Помилка завантаження стану сортування:', error);
+        window.Logger.error('[DataManager]', 'Помилка завантаження стану сортування:', error);
         participantsSortState = {
             field: null,
             direction: 'asc',
@@ -559,6 +566,10 @@ function addPrize() {
 }
 
 function removePrize(index) {
+    if (index < 0 || index >= prizes.length) {
+        window.Logger.error('[DataManager]', `removePrize: невірний індекс ${index}`);
+        return;
+    }
     if (confirm('Видалити цей приз?')) {
         prizes.splice(index, 1);
         if (typeof updateDisplay === 'function') updateDisplay();
@@ -574,9 +585,32 @@ function loadExcelData() {
     if (input) input.click();
 }
 
+// Константи для валідації Excel файлу
+const EXCEL_VALIDATION = {
+    MAX_FILE_SIZE: 10 * 1024 * 1024, // 10 МБ
+    MAX_PARTICIPANTS: 1000,
+    MAX_PRIZES: 200,
+    ALLOWED_EXTENSIONS: ['.xlsx', '.xls']
+};
+
 function handleExcelLoad(event) {
     const file = event.target.files[0];
     if (!file) return;
+
+    // Перевірка розширення файлу
+    const fileName = file.name.toLowerCase();
+    if (!EXCEL_VALIDATION.ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext))) {
+        alert('Підтримуються тільки файли .xlsx та .xls!');
+        event.target.value = '';
+        return;
+    }
+
+    // Перевірка розміру файлу
+    if (file.size > EXCEL_VALIDATION.MAX_FILE_SIZE) {
+        alert(`Файл завеликий! Максимальний розмір: 10 МБ. Розмір вашого файлу: ${(file.size / 1024 / 1024).toFixed(1)} МБ`);
+        event.target.value = '';
+        return;
+    }
 
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -604,7 +638,7 @@ function handleExcelLoad(event) {
             // НОВИЙ ПІДХІД: Імпорт з окремих листів
             if (sheetNames.length >= 2) {
                 // Якщо є кілька листів, використовуємо окремі листи для учасників та призів
-                console.log('Знайдено кілька листів, використовуємо окремі листи для імпорту');
+                window.Logger.log('[DataManager]', 'Знайдено кілька листів, використовуємо окремі листи для імпорту');
                 
                 // Знайти лист для учасників
                 let participantsSheetIndex = -1;
@@ -630,7 +664,7 @@ function handleExcelLoad(event) {
                     const participantsSheet = workbook.Sheets[sheetNames[participantsSheetIndex]];
                     const participantsData = XLSX.utils.sheet_to_json(participantsSheet, { header: 1 });
                     
-                    console.log(`Завантажуємо учасників з листа: ${sheetNames[participantsSheetIndex]}`);
+                    window.Logger.log('[DataManager]', `Завантажуємо учасників з листа: ${sheetNames[participantsSheetIndex]}`);
                     
                     // Знайти рядок з заголовками або почати з першого рядка
                     let startRow = 0;
@@ -671,7 +705,7 @@ function handleExcelLoad(event) {
                     const prizesSheet = workbook.Sheets[sheetNames[prizesSheetIndex]];
                     const prizesData = XLSX.utils.sheet_to_json(prizesSheet, { header: 1 });
                     
-                    console.log(`Завантажуємо призи з листа: ${sheetNames[prizesSheetIndex]}`);
+                    window.Logger.log('[DataManager]', `Завантажуємо призи з листа: ${sheetNames[prizesSheetIndex]}`);
                     
                     // Знайти рядок з заголовками або почати з першого рядка
                     let startRow = 0;
@@ -706,7 +740,7 @@ function handleExcelLoad(event) {
                 
             } else {
                 // СТАРИЙ ПІДХІД: Якщо тільки один лист, шукаємо дані на ньому
-                console.log('Знайдено один лист, використовуємо старий метод імпорту');
+                window.Logger.log('[DataManager]', 'Знайдено один лист, використовуємо старий метод імпорту');
                 
                 const firstSheet = workbook.Sheets[sheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
@@ -788,6 +822,19 @@ function handleExcelLoad(event) {
                 }
             }
 
+            // Обмеження кількості завантажених рядків
+            let trimWarning = '';
+            if (participants.length > EXCEL_VALIDATION.MAX_PARTICIPANTS) {
+                participants = participants.slice(0, EXCEL_VALIDATION.MAX_PARTICIPANTS);
+                participantsLoaded = EXCEL_VALIDATION.MAX_PARTICIPANTS;
+                trimWarning += `\n⚠️ Учасників обрізано до ${EXCEL_VALIDATION.MAX_PARTICIPANTS} (максимально допустиме)`;
+            }
+            if (prizes.length > EXCEL_VALIDATION.MAX_PRIZES) {
+                prizes = prizes.slice(0, EXCEL_VALIDATION.MAX_PRIZES);
+                prizesLoaded = EXCEL_VALIDATION.MAX_PRIZES;
+                trimWarning += `\n⚠️ Призів обрізано до ${EXCEL_VALIDATION.MAX_PRIZES} (максимально допустиме)`;
+            }
+
             // Застосувати збережене сортування після імпорту
             applySavedSorting();
             
@@ -799,6 +846,7 @@ function handleExcelLoad(event) {
             let message = 'Excel файл успішно завантажено!';
             message += `\nУчасників: ${participantsLoaded}`;
             message += `\nПризів: ${prizesLoaded}`;
+            message += trimWarning;
             
             if (sheetNames.length >= 2) {
                 message += `\n\nВикористано окремі листи:`;
@@ -811,7 +859,7 @@ function handleExcelLoad(event) {
             alert(message);
             
         } catch (error) {
-            console.error('Помилка при читанні Excel файлу:', error);
+            window.Logger.error('[DataManager]', 'Помилка при читанні Excel файлу:', error);
             alert('Помилка при читанні Excel файлу! Переконайтеся що файл має правильний формат.');
         } finally {
             // Очистити input для можливості повторного імпорту

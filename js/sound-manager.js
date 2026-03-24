@@ -62,11 +62,11 @@ async function loadAudioFiles() {
         return Promise.resolve();
     }
     
-    console.log('Завантаження Base64 аудіо даних...');
+    window.Logger.log('[SoundManager]', 'Завантаження Base64 аудіо даних...');
     
     // Перевірити чи доступний модуль AudioData
     if (!window.AudioData) {
-        console.warn('Модуль AudioData не завантажений, використовується Web Audio API');
+        window.Logger.warn('[SoundManager]', 'Модуль AudioData не завантажений, використовується Web Audio API');
         useWebAudioFallback = true;
         return initializeAudioContext();
     }
@@ -79,12 +79,12 @@ async function loadAudioFiles() {
         const base64Data = window.AudioData.getAudioData(soundName);
         if (base64Data) {
             const promise = loadAudioFromBase64(soundName, base64Data).catch(() => {
-                console.warn(`Не вдалося завантажити ${soundName}, буде використано Web Audio API`);
+                window.Logger.warn('[SoundManager]', `Не вдалося завантажити ${soundName}, буде використано Web Audio API`);
                 return null;
             });
             loadPromises.push(promise);
         } else {
-            console.warn(`Base64 дані для ${soundName} не знайдені`);
+            window.Logger.warn('[SoundManager]', `Base64 дані для ${soundName} не знайдені`);
             loadPromises.push(Promise.resolve(null));
         }
     }
@@ -94,17 +94,17 @@ async function loadAudioFiles() {
         const successCount = results.filter(result => result !== null).length;
         
         if (successCount === 0) {
-            console.warn('Жоден аудіо файл не завантажився з Base64, використовується Web Audio API');
+            window.Logger.warn('[SoundManager]', 'Жоден аудіо файл не завантажився з Base64, використовується Web Audio API');
             useWebAudioFallback = true;
             await initializeAudioContext();
         } else {
-            console.log(`Завантажено ${successCount} з ${results.length} Base64 аудіо файлів`);
+            window.Logger.log('[SoundManager]', `Завантажено ${successCount} з ${results.length} Base64 аудіо файлів`);
             audioFilesLoaded = true;
         }
         
         return Promise.resolve();
     } catch (error) {
-        console.error('Помилка завантаження Base64 аудіо файлів:', error);
+        window.Logger.error('[SoundManager]', 'Помилка завантаження Base64 аудіо файлів:', error);
         useWebAudioFallback = true;
         return initializeAudioContext();
     }
@@ -125,7 +125,7 @@ function loadAudioFromBase64(key, base64Data) {
         });
         
         audio.addEventListener('error', (e) => {
-            console.error(`Помилка завантаження ${key} з Base64 даних:`, e);
+            window.Logger.error('[SoundManager]', `Помилка завантаження ${key} з Base64 даних:`, e);
             reject(e);
         });
         
@@ -148,7 +148,7 @@ function initializeAudioContext() {
     try {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
         if (!AudioContextClass) {
-            console.warn('Web Audio API не підтримується цим браузером');
+            window.Logger.warn('[SoundManager]', 'Web Audio API не підтримується цим браузером');
             return Promise.reject(new Error('Web Audio API не підтримується'));
         }
         
@@ -157,15 +157,15 @@ function initializeAudioContext() {
         if (audioContext.state === 'suspended') {
             return audioContext.resume().then(() => {
                 isAudioInitialized = true;
-                console.log('Web Audio API ініціалізовано та відновлено');
+                window.Logger.log('[SoundManager]', 'Web Audio API ініціалізовано та відновлено');
             });
         } else {
             isAudioInitialized = true;
-            console.log('Web Audio API ініціалізовано');
+            window.Logger.log('[SoundManager]', 'Web Audio API ініціалізовано');
             return Promise.resolve();
         }
     } catch (error) {
-        console.error('Помилка ініціалізації Web Audio API:', error);
+        window.Logger.error('[SoundManager]', 'Помилка ініціалізації Web Audio API:', error);
         return Promise.reject(error);
     }
 }
@@ -193,13 +193,13 @@ function playAudioFile(key, loop = false, volume = 1.0) {
         const playPromise = audioClone.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
-                console.warn('Не вдалося відтворити звук:', error);
+                window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук:', error);
             });
         }
         
         return audioClone;
     } catch (error) {
-        console.warn('Помилка відтворення звуку:', error);
+        window.Logger.warn('[SoundManager]', 'Помилка відтворення звуку:', error);
         return null;
     }
 }
@@ -214,7 +214,7 @@ function stopAudioFile(audioElement) {
             audioElement.pause();
             audioElement.currentTime = 0;
         } catch (error) {
-            console.warn('Помилка зупинки звуку:', error);
+            window.Logger.warn('[SoundManager]', 'Помилка зупинки звуку:', error);
         }
     }
 }
@@ -310,7 +310,7 @@ function playSpinSound(duration = 3) {
         initializeAudioContext().then(() => {
             currentSpinSound = createSpinSound(duration);
         }).catch(error => {
-            console.warn('Не вдалося відтворити звук обертання:', error);
+            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук обертання:', error);
         });
     }
 }
@@ -354,7 +354,7 @@ function playResultSound() {
             const settings = SOUND_SETTINGS.result;
             createTone(settings.frequency, settings.duration, settings.volume, settings.type);
         }).catch(error => {
-            console.warn('Не вдалося відтворити звук результату:', error);
+            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук результату:', error);
         });
     }
 }
@@ -392,7 +392,7 @@ function playVictorySound() {
                 }
             });
         }).catch(error => {
-            console.warn('Не вдалося відтворити звук перемоги:', error);
+            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук перемоги:', error);
         });
     }
 }
@@ -419,9 +419,9 @@ function initializeSoundManager() {
     // Додати обробник для ініціалізації аудіо при першій взаємодії користувача
     const initAudioOnInteraction = () => {
         loadAudioFiles().then(() => {
-            console.log('Звуковий менеджер готовий до роботи');
+            window.Logger.log('[SoundManager]', 'Звуковий менеджер готовий до роботи');
         }).catch(error => {
-            console.warn('Звуковий менеджер не може бути ініціалізований:', error);
+            window.Logger.warn('[SoundManager]', 'Звуковий менеджер не може бути ініціалізований:', error);
             useWebAudioFallback = true;
             return initializeAudioContext();
         });

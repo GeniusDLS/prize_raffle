@@ -232,7 +232,7 @@ function secureRandom() {
         return array[0] / (0xffffffff + 1);
     } else {
         // Fallback для старих браузерів
-        console.warn('crypto.getRandomValues недоступний, використовується Math.random()');
+        window.Logger.warn('[RaffleEngine]', 'crypto.getRandomValues недоступний, використовується Math.random()');
         return Math.random();
     }
 }
@@ -718,7 +718,7 @@ function loadAnimationSettings() {
             animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
         }
     } catch (error) {
-        console.error('Помилка завантаження налаштувань анімації:', error);
+        window.Logger.error('[RaffleEngine]', 'Помилка завантаження налаштувань анімації:', error);
         animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
     }
 }

@@ -62,3 +62,6 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Локальні робочі нотатки AI (не для репозиторію)
+.github/PROGRESS.md

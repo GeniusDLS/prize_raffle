@@ -6,72 +6,64 @@
 // ===== ІНІЦІАЛІЗАЦІЯ ДОДАТКУ =====
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Ініціалізація додатку розіграшу призів...');
+    window.Logger.log('[Main]', 'Ініціалізація додатку розіграшу призів...');
     
     // Перевірити наявність необхідних модулів
     if (!window.DataManager) {
-        console.error('DataManager не завантажено!');
+        window.Logger.error('[Main]', 'DataManager не завантажено!');
         return;
     }
     
     if (!window.RaffleEngine) {
-        console.error('RaffleEngine не завантажено!');
+        window.Logger.error('[Main]', 'RaffleEngine не завантажено!');
         return;
     }
     
     if (!window.UIController) {
-        console.error('UIController не завантажено!');
+        window.Logger.error('[Main]', 'UIController не завантажено!');
         return;
     }
     
     if (!window.FairnessTests) {
-        console.error('FairnessTests не завантажено!');
+        window.Logger.error('[Main]', 'FairnessTests не завантажено!');
         return;
     }
     
     try {
         // 1. Завантажити дані з localStorage
-        console.log('Завантаження збережених даних...');
+        window.Logger.log('[Main]', 'Завантаження збережених даних...');
         window.DataManager.loadFromStorage();
         
         // 2. Завантажити налаштування анімації
-        console.log('Завантаження налаштувань анімації...');
+        window.Logger.log('[Main]', 'Завантаження налаштувань анімації...');
         window.RaffleEngine.loadAnimationSettings();
         
-        // 2.1. Ініціалізувати автозбереження налаштувань анімації
-        console.log('Ініціалізація автозбереження налаштувань...');
-        // Затримка для завантаження DOM елементів
-        setTimeout(() => {
-            if (window.RaffleEngine.setupAnimationSettingsAutoSave && !window._animationAutoSaveInitialized) {
-                window.RaffleEngine.setupAnimationSettingsAutoSave();
-                window._animationAutoSaveInitialized = true;
-            }
-        }, 100);
-        
         // 3. Ініціалізувати UI
-        console.log('Ініціалізація інтерфейсу...');
+        window.Logger.log('[Main]', 'Ініціалізація інтерфейсу...');
         window.UIController.initializeUI();
         
+        // 2.1. Ініціалізувати автозбереження налаштувань анімації (після initializeUI, щоб DOM елементи налаштувань були готові)
+        window.Logger.log('[Main]', 'Ініціалізація автозбереження налаштувань...');
+        window.RaffleEngine.setupAnimationSettingsAutoSave();
+        
         // 4. Оновити відображення
-        console.log('Оновлення відображення...');
+        window.Logger.log('[Main]', 'Оновлення відображення...');
         window.UIController.updateDisplay();
         window.UIController.updateResultsDisplay();
         
         // 5. Ініціалізувати статистику для сторінки розіграшу
         if (window.DataManager.isRaffleActive) {
-            // Якщо розіграш активний, показуємо поточний стан
-            setTimeout(() => window.UIController.updateRaffleStats(), 50);
+            window.UIController.updateRaffleStats();
         } else {
-            // Якщо розіграш не активний, показуємо загальну статистику
-            setTimeout(() => window.UIController.initializeRaffleStats(), 50);
+            window.UIController.initializeRaffleStats();
         }
         
         // 6. Налаштувати автозбереження
-        console.log('Налаштування автозбереження...');
+        window.Logger.log('[Main]', 'Налаштування автозбереження...');
         window.DataManager.setupAutoSave();
         window.DataManager.setupBeforeUnload();
         
-        console.log('Ініціалізація завершена успішно!');
+        window.Logger.log('[Main]', 'Ініціалізація завершена успішно!');
         
         // Показати повідомлення про готовність
         setTimeout(() => {
@@ -82,7 +74,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
         
     } catch (error) {
-        console.error('Помилка під час ініціалізації:', error);
+        window.Logger.error('[Main]', 'Помилка під час ініціалізації:', error);
         alert('Виникла помилка під час ініціалізації додатку. Перезавантажте сторінку.');
     }
 });
@@ -241,26 +233,26 @@ window.resetAnimationSettings = function() {
 
 // Функція для перевірки стану додатку
 window.checkAppStatus = function() {
-    console.log('=== СТАТУС ДОДАТКУ ===');
-    console.log('DataManager:', !!window.DataManager);
-    console.log('RaffleEngine:', !!window.RaffleEngine);
-    console.log('UIController:', !!window.UIController);
+    window.Logger.log('[Main]', '=== СТАТУС ДОДАТКУ ===');
+    window.Logger.log('[Main]', 'DataManager:', !!window.DataManager);
+    window.Logger.log('[Main]', 'RaffleEngine:', !!window.RaffleEngine);
+    window.Logger.log('[Main]', 'UIController:', !!window.UIController);
     
     if (window.DataManager) {
-        console.log('Учасників:', window.DataManager.participants.length);
-        console.log('Призів:', window.DataManager.prizes.length);
-        console.log('Результатів:', window.DataManager.results.length);
-        console.log('Розіграш активний:', window.DataManager.isRaffleActive);
-        console.log('Поточний раунд:', window.DataManager.currentRound);
+        window.Logger.log('[Main]', 'Учасників:', window.DataManager.participants.length);
+        window.Logger.log('[Main]', 'Призів:', window.DataManager.prizes.length);
+        window.Logger.log('[Main]', 'Результатів:', window.DataManager.results.length);
+        window.Logger.log('[Main]', 'Розіграш активний:', window.DataManager.isRaffleActive);
+        window.Logger.log('[Main]', 'Поточний раунд:', window.DataManager.currentRound);
     }
     
-    console.log('===================');
+    window.Logger.log('[Main]', '===================');
 };
 
 // Функція для експорту статусу (для debugging)
 window.exportAppState = function() {
     if (!window.DataManager) {
-        console.error('DataManager не доступний');
+        window.Logger.error('[Main]', 'DataManager не доступний');
         return null;
     }
     
@@ -279,7 +271,7 @@ window.exportAppState = function() {
 // Функція для імпорту стану (для debugging)
 window.importAppState = function(state) {
     if (!window.DataManager) {
-        console.error('DataManager не доступний');
+        window.Logger.error('[Main]', 'DataManager не доступний');
         return false;
     }
     
@@ -307,10 +299,10 @@ window.importAppState = function(state) {
         // Зберегти
         window.DataManager.saveToStorage();
         
-        console.log('Стан додатку імпортовано успішно');
+        window.Logger.log('[Main]', 'Стан додатку імпортовано успішно');
         return true;
     } catch (error) {
-        console.error('Помилка при імпорті стану:', error);
+        window.Logger.error('[Main]', 'Помилка при імпорті стану:', error);
         return false;
     }
 };
@@ -319,7 +311,7 @@ window.importAppState = function(state) {
 
 // Глобальний обробник помилок
 window.addEventListener('error', function(e) {
-    console.error('Глобальна помилка:', e.error);
+    window.Logger.error('[Main]', 'Глобальна помилка:', e.error);
     
     // Не показувати alert для кожної помилки, щоб не спамити користувача
     // Тільки логуємо в консоль
@@ -327,7 +319,7 @@ window.addEventListener('error', function(e) {
 
 // Обробник для необроблених promise відхилень
 window.addEventListener('unhandledrejection', function(e) {
-    console.error('Необроблене відхилення Promise:', e.reason);
+    window.Logger.error('[Main]', 'Необроблене відхилення Promise:', e.reason);
     e.preventDefault(); // Не показувати в консолі браузера
 });
 
@@ -350,14 +342,14 @@ window.RafflePrizeApp = {
     
     // Інформація про модулі
     info: function() {
-        console.log('🎉 Додаток розіграшу призів');
-        console.log('Версія:', this.version);
-        console.log('Модулі завантажено:');
-        console.log('  - DataManager:', !!window.DataManager);
-        console.log('  - RaffleEngine:', !!window.RaffleEngine);
-        console.log('  - UIController:', !!window.UIController);
-        console.log('  - FairnessTests:', !!window.FairnessTests);
-        console.log('Для перевірки статусу викличте: RafflePrizeApp.checkStatus()');
+        window.Logger.log('[Main]', '🎉 Додаток розіграшу призів');
+        window.Logger.log('[Main]', 'Версія:', this.version);
+        window.Logger.log('[Main]', 'Модулі завантажено:');
+        window.Logger.log('[Main]', '  - DataManager:', !!window.DataManager);
+        window.Logger.log('[Main]', '  - RaffleEngine:', !!window.RaffleEngine);
+        window.Logger.log('[Main]', '  - UIController:', !!window.UIController);
+        window.Logger.log('[Main]', '  - FairnessTests:', !!window.FairnessTests);
+        window.Logger.log('[Main]', 'Для перевірки статусу викличте: RafflePrizeApp.checkStatus()');
     }
 };
 

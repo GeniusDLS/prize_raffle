@@ -3,32 +3,15 @@
  * Модуль для тестування чесності генератора випадкових чисел
  */
 
-// ===== ПОКРАЩЕНИЙ ГЕНЕРАТОР ВИПАДКОВИХ ЧИСЕЛ =====
+// ===== ДОПОМІЖНІ ФУНКЦІЇ =====
 
 /**
- * Покращений генератор випадкових чисел на основі crypto.getRandomValues()
- * Більш справедливий для великої кількості учасників (1000+)
- */
-function secureRandom() {
-    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-        // Використовуємо криптографічно стійкий генератор
-        const array = new Uint32Array(1);
-        crypto.getRandomValues(array);
-        return array[0] / (0xffffffff + 1);
-    } else {
-        // Fallback для старих браузерів
-        console.warn('crypto.getRandomValues недоступний, використовується Math.random()');
-        return Math.random();
-    }
-}
-
-/**
- * Зважений випадковий вибір з покращеним генератором
- * Використовується для всіх тестів справедливості
+ * Зважений випадковий вибір для тестів
+ * Використовує window.RaffleEngine.secureRandom() як єдине джерело криптогенератора
  */
 function secureWeightedRandom(participants) {
     const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
-    let random = secureRandom() * totalWeight;
+    let random = window.RaffleEngine.secureRandom() * totalWeight;
 
     for (const participant of participants) {
         random -= participant.weight;
@@ -81,7 +64,7 @@ async function runSequenceTest() {
         hideTestStatus();
         
     } catch (error) {
-        console.error('Помилка під час тестування:', error);
+        window.Logger.error('[FairnessTests]', 'Помилка під час тестування:', error);
         showTestStatus('Помилка під час виконання тесту', false);
     }
 }
@@ -90,14 +73,14 @@ async function runSequenceTest() {
  * Генерує послідовність випадкових чисел для тестування
  */
 async function generateRandomSequence(count) {
-    console.log(`Генерування ${count} випадкових чисел...`);
+    window.Logger.log('[FairnessTests]', `Генерування ${count} випадкових чисел...`);
     
     const sequence = [];
     const startTime = performance.now();
     
     for (let i = 0; i < count; i++) {
-        // Використовуємо покращений генератор
-        sequence.push(secureRandom());
+        // Використовуємо єдиний криптогенератор з RaffleEngine
+        sequence.push(window.RaffleEngine.secureRandom());
         
         // Показувати прогрес кожні 1000 ітерацій
         if (i % 1000 === 0 && i > 0) {
@@ -108,7 +91,7 @@ async function generateRandomSequence(count) {
     }
     
     const endTime = performance.now();
-    console.log(`Генерування завершено за ${(endTime - startTime).toFixed(2)}мс`);
+    window.Logger.log('[FairnessTests]', `Генерування завершено за ${(endTime - startTime).toFixed(2)}мс`);
     
     return sequence;
 }
@@ -407,7 +390,7 @@ async function runDistributionTest() {
         hideDistributionTestStatus();
         
     } catch (error) {
-        console.error('Помилка під час тестування розподілу:', error);
+        window.Logger.error('[FairnessTests]', 'Помилка під час тестування розподілу:', error);
         showDistributionTestStatus('Помилка під час виконання тесту розподілу', false);
     }
 }
@@ -416,7 +399,7 @@ async function runDistributionTest() {
  * Симулює багато розіграшів для перевірки розподілу
  */
 async function simulateRaffleDistribution(participants, simulationCount) {
-    console.log(`Симуляція ${simulationCount} розіграшів...`);
+    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів...`);
     
     const results = {};
     
@@ -441,7 +424,7 @@ async function simulateRaffleDistribution(participants, simulationCount) {
     }
     
     const endTime = performance.now();
-    console.log(`Симуляція завершена за ${(endTime - startTime).toFixed(2)}мс`);
+    window.Logger.log('[FairnessTests]', `Симуляція завершена за ${(endTime - startTime).toFixed(2)}мс`);
     
     return results;
 }
@@ -833,7 +816,7 @@ async function runFairnessTest() {
         hideFairnessTestStatus();
         
     } catch (error) {
-        console.error('Помилка під час тестування справедливості:', error);
+        window.Logger.error('[FairnessTests]', 'Помилка під час тестування справедливості:', error);
         showFairnessTestStatus('Помилка під час виконання тесту справедливості', false);
     }
 }
@@ -842,7 +825,7 @@ async function runFairnessTest() {
  * Симулює багато розіграшів для тесту справедливості
  */
 async function simulateFairnessTest(participants, simulationCount) {
-    console.log(`Симуляція ${simulationCount} розіграшів для тесту справедливості...`);
+    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів для тесту справедливості...`);
     
     const results = {};
     
@@ -867,7 +850,7 @@ async function simulateFairnessTest(participants, simulationCount) {
     }
     
     const endTime = performance.now();
-    console.log(`Симуляція справедливості завершена за ${(endTime - startTime).toFixed(2)}мс`);
+    window.Logger.log('[FairnessTests]', `Симуляція справедливості завершена за ${(endTime - startTime).toFixed(2)}мс`);
     
     // Повернути правильну структуру для calculateFairnessStatistics
     return {
@@ -1297,4 +1280,4 @@ window.clearDistributionTestResults = clearDistributionTestResults;
 window.runFairnessTest = runFairnessTest;
 window.clearFairnessTestResults = clearFairnessTestResults;
 
-console.log('📁 Модуль тестів чесності завантажено (з тестом справедливості)');
+window.Logger.log('[FairnessTests]', '📁 Модуль тестів чесності завантажено (з тестом справедливості)');
