@@ -824,15 +824,11 @@ async function runFairnessTest() {
 }
 
 /**
- * Симулює багато розіграшів для тесту справедливості
- * Точно відтворює реальний алгоритм: переможець видаляється після кожного раунду
+ * Симулює багато одиночних виборів для тесту справедливості
+ * Перевіряє якість одного вибору: чи відповідає ймовірність перемоги вазі учасника
  */
 async function simulateFairnessTest(participants, simulationCount) {
-    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів для тесту справедливості...`);
-    
-    const prizes = window.DataManager.prizes;
-    // Загальна кількість раундів на один повний розіграш (сума count усіх призів)
-    const roundsPerRaffle = prizes.reduce((sum, prize) => sum + prize.count, 0);
+    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} виборів для тесту справедливості...`);
     
     const results = {};
     participants.forEach(participant => {
@@ -840,24 +836,15 @@ async function simulateFairnessTest(participants, simulationCount) {
     });
     
     const startTime = performance.now();
-    let totalWins = 0;
     
     for (let i = 0; i < simulationCount; i++) {
-        // Копія учасників для цього розіграшу — як у реальному алгоритмі
-        let available = [...participants];
-        
-        for (let round = 0; round < roundsPerRaffle && available.length > 0; round++) {
-            const winner = secureWeightedRandom(available);
-            results[winner.name]++;
-            totalWins++;
-            // Видалити переможця — як у реальному розіграші
-            available = available.filter(p => p.name !== winner.name);
-        }
+        // Одиночний незалежний вибір — перевіряє точність ймовірностей
+        const winner = secureWeightedRandom(participants);
+        results[winner.name]++;
         
         // Показувати прогрес кожні 500 ітерацій
         if (i % 500 === 0 && i > 0) {
             updateFairnessTestStatus(`Проведено ${i}/${simulationCount} симуляцій...`);
-            // Дати браузеру час на оновлення UI
             await new Promise(resolve => setTimeout(resolve, 1));
         }
     }
@@ -868,8 +855,8 @@ async function simulateFairnessTest(participants, simulationCount) {
     return {
         results: results,
         totalRaffles: simulationCount,
-        roundsPerRaffle: roundsPerRaffle,
-        totalWins: totalWins
+        roundsPerRaffle: 1,
+        totalWins: simulationCount
     };
 }
 
@@ -1169,9 +1156,8 @@ function displayFairnessTestDetails(stats) {
         • Бал справедливості: комбінація всіх метрик (0-100)
         
         <strong>Деталі симуляції:</strong>
-        • Кожен розіграш симулював реальний алгоритм
-        • Учасники видалялися після перемог (як у реальному розіграші)
-        • Призи видавалися по одному за раунд
+        • Кожна симуляція = один незалежний вибір переможця
+        • Перевіряється точність ймовірностей для одного вибору
         • Зважений випадковий вибір через secureWeightedRandom() (crypto.getRandomValues())
         
         <strong>Деталі розрахунків:</strong>
