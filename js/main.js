@@ -105,6 +105,35 @@ window.removePrize = function(index) {
     if (window.DataManager) window.DataManager.removePrize(index);
 };
 
+// Функції inline редагування
+window.startEditParticipant = function(index) {
+    if (window.UIController) window.UIController.startEditParticipant(index);
+};
+
+window.saveEditParticipant = function(index) {
+    if (window.UIController) window.UIController.saveEditParticipant(index);
+};
+
+window.cancelEditParticipant = function() {
+    if (window.UIController) window.UIController.cancelEditParticipant();
+};
+
+window.startEditPrize = function(index) {
+    if (window.UIController) window.UIController.startEditPrize(index);
+};
+
+window.saveEditPrize = function(index) {
+    if (window.UIController) window.UIController.saveEditPrize(index);
+};
+
+window.cancelEditPrize = function() {
+    if (window.UIController) window.UIController.cancelEditPrize();
+};
+
+window.handleEditKeydown = function(event, type, index) {
+    if (window.UIController) window.UIController.handleEditKeydown(event, type, index);
+};
+
 // Функції розіграшу
 window.startRaffle = function() {
     if (window.RaffleEngine) window.RaffleEngine.startRaffle();

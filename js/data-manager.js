@@ -380,6 +380,44 @@ function removeParticipant(index) {
     }
 }
 
+function updateParticipant(index, name, division, weight) {
+    if (index < 0 || index >= participants.length) {
+        window.Logger.error('[DataManager]', `updateParticipant: невірний індекс ${index}`);
+        return false;
+    }
+
+    name = String(name || '').trim();
+    division = String(division || '').trim();
+    weight = parseInt(weight) || 1;
+
+    if (!name) {
+        if (typeof showError === 'function') showError('participants-error', 'Ім\'я не може бути порожнім');
+        return false;
+    }
+
+    if (!division) {
+        if (typeof showError === 'function') showError('participants-error', 'Введіть підрозділ');
+        return false;
+    }
+
+    if (weight < 1) {
+        if (typeof showError === 'function') showError('participants-error', 'Вага повинна бути більше 0');
+        return false;
+    }
+
+    // Перевірити дублікат (крім поточного учасника)
+    if (participants.some((p, i) => i !== index && p.name === name)) {
+        if (typeof showError === 'function') showError('participants-error', 'Учасник з таким іменем вже існує');
+        return false;
+    }
+
+    participants[index] = { ...participants[index], name, division, weight };
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
+    markAsChanged();
+    return true;
+}
+
 // ===== СОРТУВАННЯ ТА ПЕРЕМІШУВАННЯ УЧАСНИКІВ =====
 
 // Сортування учасників за вказаним полем
@@ -576,6 +614,32 @@ function removePrize(index) {
         if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         markAsChanged();
     }
+}
+
+function updatePrize(index, name, count) {
+    if (index < 0 || index >= prizes.length) {
+        window.Logger.error('[DataManager]', `updatePrize: невірний індекс ${index}`);
+        return false;
+    }
+
+    name = String(name || '').trim();
+    count = parseInt(count) || 1;
+
+    if (!name) {
+        if (typeof showError === 'function') showError('prizes-error', 'Назва призу не може бути порожньою');
+        return false;
+    }
+
+    if (count < 1) {
+        if (typeof showError === 'function') showError('prizes-error', 'Кількість повинна бути більше 0');
+        return false;
+    }
+
+    prizes[index] = { ...prizes[index], name, count };
+    if (typeof updateDisplay === 'function') updateDisplay();
+    if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
+    markAsChanged();
+    return true;
 }
 
 // ===== EXCEL ФУНКЦІЇ =====
@@ -1199,8 +1263,10 @@ window.DataManager = {
     markAsChanged,
     addParticipant,
     removeParticipant,
+    updateParticipant,
     addPrize,
     removePrize,
+    updatePrize,
     loadExcelData,
     handleExcelLoad,
     exportToExcel,

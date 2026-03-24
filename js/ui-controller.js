@@ -122,25 +122,67 @@ function updateDisplay() {
     updateSortButtonsState();
 }
 
+// ===== СТАН INLINE РЕДАГУВАННЯ =====
+let editingParticipantIndex = -1;
+let editingPrizeIndex = -1;
+
 function updateParticipantsList() {
     const tbody = document.getElementById('participants-list');
     if (!tbody) return;
-    
+
     const participants = window.DataManager.participants;
     tbody.innerHTML = '';
 
     participants.forEach((participant, index) => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHtml(participant.name)}</td>
-            <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
-            <td>${escapeHtml(participant.weight)}</td>
-            <td>
-                <button class="btn btn-danger" onclick="removeParticipant(${index})">Видалити</button>
-            </td>
-        `;
+        if (index === editingParticipantIndex) {
+            row.innerHTML = `
+                <td><input class="inline-edit" type="text" id="edit-p-name" value="${escapeHtml(participant.name)}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
+                <td><input class="inline-edit" type="text" id="edit-p-division" value="${escapeHtml(participant.division || '')}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
+                <td><input class="inline-edit inline-edit-number" type="number" id="edit-p-weight" value="${participant.weight}" min="1" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="saveEditParticipant(${index})" title="Зберегти">✓</button>
+                    <button class="btn btn-secondary btn-sm" onclick="cancelEditParticipant()" title="Скасувати">✕</button>
+                </td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td>${escapeHtml(participant.name)}</td>
+                <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
+                <td>${escapeHtml(participant.weight)}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="startEditParticipant(${index})" title="Редагувати">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="removeParticipant(${index})" title="Видалити">✕</button>
+                </td>
+            `;
+        }
         tbody.appendChild(row);
     });
+}
+
+function startEditParticipant(index) {
+    editingParticipantIndex = index;
+    editingPrizeIndex = -1;
+    updateParticipantsList();
+    const nameInput = document.getElementById('edit-p-name');
+    if (nameInput) { nameInput.focus(); nameInput.select(); }
+}
+
+function saveEditParticipant(index) {
+    const name = document.getElementById('edit-p-name')?.value ?? '';
+    const division = document.getElementById('edit-p-division')?.value ?? '';
+    const weight = document.getElementById('edit-p-weight')?.value ?? '1';
+    editingParticipantIndex = -1;
+    const saved = window.DataManager.updateParticipant(index, name, division, weight);
+    if (!saved) {
+        // Повернути у режим редагування при помилці валідації
+        editingParticipantIndex = index;
+    }
+}
+
+function cancelEditParticipant() {
+    editingParticipantIndex = -1;
+    updateParticipantsList();
 }
 
 // Оновлення стану кнопок сортування
@@ -171,21 +213,68 @@ function updateSortButtonsState() {
 function updatePrizesList() {
     const tbody = document.getElementById('prizes-list');
     if (!tbody) return;
-    
+
     const prizes = window.DataManager.prizes;
     tbody.innerHTML = '';
 
     prizes.forEach((prize, index) => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${escapeHtml(prize.name)}</td>
-            <td>${escapeHtml(prize.count)}</td>
-            <td>
-                <button class="btn btn-danger" onclick="removePrize(${index})">Видалити</button>
-            </td>
-        `;
+        if (index === editingPrizeIndex) {
+            row.innerHTML = `
+                <td><input class="inline-edit" type="text" id="edit-pr-name" value="${escapeHtml(prize.name)}" onkeydown="handleEditKeydown(event,'prize',${index})"></td>
+                <td><input class="inline-edit inline-edit-number" type="number" id="edit-pr-count" value="${prize.count}" min="1" onkeydown="handleEditKeydown(event,'prize',${index})"></td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="saveEditPrize(${index})" title="Зберегти">✓</button>
+                    <button class="btn btn-secondary btn-sm" onclick="cancelEditPrize()" title="Скасувати">✕</button>
+                </td>
+            `;
+        } else {
+            row.innerHTML = `
+                <td>${escapeHtml(prize.name)}</td>
+                <td>${escapeHtml(prize.count)}</td>
+                <td>
+                    <button class="btn btn-warning btn-sm" onclick="startEditPrize(${index})" title="Редагувати">✏️</button>
+                    <button class="btn btn-danger btn-sm" onclick="removePrize(${index})" title="Видалити">✕</button>
+                </td>
+            `;
+        }
         tbody.appendChild(row);
     });
+}
+
+function startEditPrize(index) {
+    editingPrizeIndex = index;
+    editingParticipantIndex = -1;
+    updatePrizesList();
+    const nameInput = document.getElementById('edit-pr-name');
+    if (nameInput) { nameInput.focus(); nameInput.select(); }
+}
+
+function saveEditPrize(index) {
+    const name = document.getElementById('edit-pr-name')?.value ?? '';
+    const count = document.getElementById('edit-pr-count')?.value ?? '1';
+    editingPrizeIndex = -1;
+    const saved = window.DataManager.updatePrize(index, name, count);
+    if (!saved) {
+        // Повернути у режим редагування при помилці валідації
+        editingPrizeIndex = index;
+    }
+}
+
+function cancelEditPrize() {
+    editingPrizeIndex = -1;
+    updatePrizesList();
+}
+
+// Обробка клавіш Enter/Escape при inline редагуванні
+function handleEditKeydown(event, type, index) {
+    if (event.key === 'Enter') {
+        if (type === 'participant') saveEditParticipant(index);
+        else if (type === 'prize') saveEditPrize(index);
+    } else if (event.key === 'Escape') {
+        if (type === 'participant') cancelEditParticipant();
+        else if (type === 'prize') cancelEditPrize();
+    }
 }
 
 // ===== РЕЗУЛЬТАТИ =====
@@ -532,6 +621,15 @@ window.UIController = {
     updatePrizesList,
     updateResultsDisplay,
     updateSortButtonsState,
+
+    // Inline редагування
+    startEditParticipant,
+    saveEditParticipant,
+    cancelEditParticipant,
+    startEditPrize,
+    saveEditPrize,
+    cancelEditPrize,
+    handleEditKeydown,
     
     // Налаштування
     setupFormHandlers,
@@ -558,6 +656,13 @@ window.UIController = {
 // Також зробити функції доступними напряму для обратної сумісності
 window.showPage = showPage;
 window.showDataTab = showDataTab;
+window.startEditParticipant = startEditParticipant;
+window.saveEditParticipant = saveEditParticipant;
+window.cancelEditParticipant = cancelEditParticipant;
+window.startEditPrize = startEditPrize;
+window.saveEditPrize = saveEditPrize;
+window.cancelEditPrize = cancelEditPrize;
+window.handleEditKeydown = handleEditKeydown;
 window.initializeRaffleStats = initializeRaffleStats;
 window.updateRaffleStats = updateRaffleStats;
 window.showError = showError;

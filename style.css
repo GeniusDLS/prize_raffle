@@ -373,6 +373,46 @@ body {
     padding: 4px 15px;
 }
 
+/* Зелена кнопка (підтвердження, збереження) */
+.btn-success {
+    background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
+    color: white;
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #A8D464 0%, #8FC640 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(62, 180, 73, 0.4);
+}
+
+/* Компактні кнопки для таблиць */
+.btn-sm {
+    padding: 3px 8px;
+    font-size: 13px;
+    border-radius: 5px;
+    line-height: 1.4;
+}
+
+/* Inline редагування в таблиці */
+.inline-edit {
+    width: 100%;
+    padding: 3px 6px;
+    border: 1px solid #3EB449;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.inline-edit-number {
+    width: 70px;
+}
+
+.inline-edit:focus {
+    outline: none;
+    border-color: #3EB449;
+    box-shadow: 0 0 0 2px rgba(62, 180, 73, 0.2);
+}
+
 .data-table tr:hover {
     background: #E8F5E8;
 }
