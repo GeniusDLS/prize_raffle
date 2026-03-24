@@ -553,7 +553,7 @@ function updateDistributionResultValue(elementId, value, className = '') {
 }
 
 /**
- * Отображает таблицу распределения участников
+ * Відображає таблицю розподілу учасників
  */
 function displayParticipantsDistributionTable(participantStats) {
     const tableContainer = document.getElementById('participants-distribution-table');
@@ -577,6 +577,8 @@ function displayParticipantsDistributionTable(participantStats) {
         </thead>
     `;
     
+    const escapeHtml = window.UIController.escapeHtml;
+
     // Рядки таблиці
     const rows = participantStats.map(stat => {
         const deviationClass = getDeviationClass(stat.relativeDeviation);
@@ -584,7 +586,7 @@ function displayParticipantsDistributionTable(participantStats) {
         
         return `
             <tr>
-                <td><strong>${stat.name}</strong></td>
+                <td><strong>${escapeHtml(stat.name)}</strong></td>
                 <td>${stat.weight}</td>
                 <td>${(stat.expectedProbability * 100).toFixed(2)}%</td>
                 <td>${stat.expectedCount.toFixed(1)}</td>
@@ -823,23 +825,34 @@ async function runFairnessTest() {
 
 /**
  * Симулює багато розіграшів для тесту справедливості
+ * Точно відтворює реальний алгоритм: переможець видаляється після кожного раунду
  */
 async function simulateFairnessTest(participants, simulationCount) {
     window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів для тесту справедливості...`);
     
-    const results = {};
+    const prizes = window.DataManager.prizes;
+    // Загальна кількість раундів на один повний розіграш (сума count усіх призів)
+    const roundsPerRaffle = prizes.reduce((sum, prize) => sum + prize.count, 0);
     
-    // Ініціалізувати лічильники для кожного учасника
+    const results = {};
     participants.forEach(participant => {
         results[participant.name] = 0;
     });
     
     const startTime = performance.now();
+    let totalWins = 0;
     
     for (let i = 0; i < simulationCount; i++) {
-        // Вибрати переможця з урахуванням ваги (покращений алгоритм)
-        const winner = secureWeightedRandom(participants);
-        results[winner.name]++;
+        // Копія учасників для цього розіграшу — як у реальному алгоритмі
+        let available = [...participants];
+        
+        for (let round = 0; round < roundsPerRaffle && available.length > 0; round++) {
+            const winner = secureWeightedRandom(available);
+            results[winner.name]++;
+            totalWins++;
+            // Видалити переможця — як у реальному розіграші
+            available = available.filter(p => p.name !== winner.name);
+        }
         
         // Показувати прогрес кожні 500 ітерацій
         if (i % 500 === 0 && i > 0) {
@@ -852,12 +865,11 @@ async function simulateFairnessTest(participants, simulationCount) {
     const endTime = performance.now();
     window.Logger.log('[FairnessTests]', `Симуляція справедливості завершена за ${(endTime - startTime).toFixed(2)}мс`);
     
-    // Повернути правильну структуру для calculateFairnessStatistics
     return {
         results: results,
-        totalRaffles: simulationCount, // Кількість проведених розіграшів
-        roundsPerRaffle: 1, // В даному тесті кожна симуляція = 1 раунд
-        totalWins: simulationCount // Загальна кількість виборів переможців
+        totalRaffles: simulationCount,
+        roundsPerRaffle: roundsPerRaffle,
+        totalWins: totalWins
     };
 }
 
@@ -1059,6 +1071,8 @@ function displayFairnessIntervalsTable(participantStats) {
         </thead>
     `;
     
+    const escapeHtml = window.UIController.escapeHtml;
+
     // Рядки таблиці
     const rows = participantStats.map(stat => {
         const statusIcon = stat.isInConfidenceInterval ? '✅' : '❌';
@@ -1068,7 +1082,7 @@ function displayFairnessIntervalsTable(participantStats) {
         
         return `
             <tr>
-                <td><strong>${stat.name}</strong></td>
+                <td><strong>${escapeHtml(stat.name)}</strong></td>
                 <td>${stat.weight}</td>
                 <td>${stat.expectedCount.toFixed(1)}</td>
                 <td>${stat.observedCount}</td>
@@ -1121,7 +1135,7 @@ function displayFairnessTestInterpretation(stats) {
             <div class="${className}">⚡ ЗАДОВІЛЬНА СПРАВЕДЛИВІСТЬ</div>
             <p>Загальний бал справедливості: <strong>${score.toFixed(1)}/100</strong></p>
             <p>Лише ${confidenceRate.toFixed(0)}% учасників у довірчих інтервалах. 
-            Учасник "${stats.maxDeviationParticipant.name}" має найбільше відхилення: ${(stats.maxRelativeDeviation * 100).toFixed(1)}%.</p>
+            Учасник "${window.UIController.escapeHtml(stats.maxDeviationParticipant.name)}" має найбільше відхилення: ${(stats.maxRelativeDeviation * 100).toFixed(1)}%.</p>
             <p><strong>Рекомендації:</strong> Розгляньте збільшення кількості симуляцій або перегляд алгоритму.</p>
         `;
     } else {
@@ -1158,7 +1172,7 @@ function displayFairnessTestDetails(stats) {
         • Кожен розіграш симулював реальний алгоритм
         • Учасники видалялися після перемог (як у реальному розіграші)
         • Призи видавалися по одному за раунд
-        • Зважений випадковий вибір за Math.random()
+        • Зважений випадковий вибір через secureWeightedRandom() (crypto.getRandomValues())
         
         <strong>Деталі розрахунків:</strong>
         • Учасників у довірчих інтервалах: ${stats.participantsInConfidence}/${stats.totalParticipants}

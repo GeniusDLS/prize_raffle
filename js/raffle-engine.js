@@ -114,7 +114,7 @@ function nextRound() {
         
         // Вибір переможця з урахуванням ваги
         const winner = selectWeightedRandom(availableParticipants);
-        const prizeIndex = Math.floor(Math.random() * availablePrizes.length);
+        const prizeIndex = Math.floor(secureRandom() * availablePrizes.length);
         const wonPrize = availablePrizes[prizeIndex];
 
         // Встановити фінальний результат
