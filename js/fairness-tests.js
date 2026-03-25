@@ -1586,6 +1586,7 @@ function drawSimulationChart(stats, simulationCount) {
     const maxProb = Math.max(...stats.map(s => Math.max(s.theoretical, s.empirical)));
     const xMax    = Math.min(1, maxProb * 1.18);
     const xScale  = v => marginLeft + (v / xMax) * chartW;
+    const tickCount = 5;
 
     // Фон
     ctx.fillStyle = '#ffffff';
@@ -1636,7 +1637,6 @@ function drawSimulationChart(stats, simulationCount) {
         ctx.strokeStyle = '#e9ecef';
         ctx.lineWidth = 1;
         ctx.setLineDash([2, 3]);
-        const tickCount = 5;
         for (let t = 1; t <= tickCount; t++) {
             const tx = xScale((xMax / tickCount) * t);
             ctx.beginPath();
