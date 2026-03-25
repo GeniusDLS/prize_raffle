@@ -1370,17 +1370,25 @@ function displaySimulationResults(participants, simData) {
     const minProb = Math.min(...stats.map(s => s.empirical));
     const avgDeviation = stats.reduce((sum, s) => sum + Math.abs(s.deviation), 0) / stats.length;
 
+    // Очікуване статистичне відхилення при даній кількості симуляцій
+    // E[|X - E[X]|] = σ × √(2/π) для нормального розподілу
+    const expectedAvgDeviation = stats.reduce((sum, s) => {
+        const sigma = Math.sqrt(s.theoretical * (1 - s.theoretical) / simulationCount);
+        return sum + sigma * Math.sqrt(2 / Math.PI);
+    }, 0) / stats.length;
+    const deviationRatio = expectedAvgDeviation > 0 ? avgDeviation / expectedAvgDeviation : 1;
+
     // Оновити картки результатів
     updateSimulationResultValue('sim-total-simulations', simulationCount.toLocaleString());
     updateSimulationResultValue('sim-participants-count', participants.length.toString());
     updateSimulationResultValue('sim-prize-count', prizeCount.toString());
     updateSimulationResultValue('sim-max-probability', `${(maxProb * 100).toFixed(1)}%`);
     updateSimulationResultValue('sim-min-probability', `${(minProb * 100).toFixed(1)}%`);
-    updateSimulationResultValue('sim-avg-deviation', `${(avgDeviation * 100).toFixed(2)}%`);
+    updateSimulationResultValue('sim-avg-deviation', `${(avgDeviation * 100).toFixed(2)}% (очік. ~${(expectedAvgDeviation * 100).toFixed(2)}%)`);
 
     // Таблиця та інтерпретація
     displaySimulationTable(stats, simulationCount);
-    displaySimulationInterpretation(stats, simData, avgDeviation);
+    displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio);
 
     showSimulationResults();
 }
@@ -1439,7 +1447,7 @@ function displaySimulationTable(stats, simulationCount) {
 /**
  * Відображає інтерпретацію результатів симуляції
  */
-function displaySimulationInterpretation(stats, simData, avgDeviation) {
+function displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio) {
     const interpretationEl = document.getElementById('simulation-interpretation-text');
     if (!interpretationEl) { return; }
 
@@ -1447,19 +1455,21 @@ function displaySimulationInterpretation(stats, simData, avgDeviation) {
     const maxDeviation = Math.max(...stats.map(s => Math.abs(s.deviation)));
     const maxDeviationStat = stats.reduce((max, s) => Math.abs(s.deviation) > Math.abs(max.deviation) ? s : max, stats[0]);
 
+    // Якість оцінюється відносно очікуваного статистичного шуму (deviationRatio = фактичне / очікуване)
+    // ratio ≤ 1.2 — відмінно (в межах норми), ratio > 3 — справжня аномалія
     let qualityClass, qualityLabel;
-    if (avgDeviation < 0.01) {
+    if (deviationRatio <= 1.2) {
         qualityClass = 'interpretation-good';
         qualityLabel = '✅ ВІДМІННА ТОЧНІСТЬ';
-    } else if (avgDeviation < 0.02) {
+    } else if (deviationRatio <= 1.8) {
         qualityClass = 'interpretation-good';
         qualityLabel = '✅ ДОБРА ТОЧНІСТЬ';
-    } else if (avgDeviation < 0.05) {
+    } else if (deviationRatio <= 3.0) {
         qualityClass = 'interpretation-warning';
-        qualityLabel = '⚡ ЗАДОВІЛЬНА ТОЧНІСТЬ';
+        qualityLabel = '⚡ ПІДВИЩЕНА ДИСПЕРСІЯ';
     } else {
         qualityClass = 'interpretation-bad';
-        qualityLabel = '⚠️ ВИСОКА ДИСПЕРСІЯ';
+        qualityLabel = '⚠️ АНОМАЛЬНА ДИСПЕРСІЯ';
     }
 
     const escapeHtml = window.UIController.escapeHtml;
@@ -1468,15 +1478,18 @@ function displaySimulationInterpretation(stats, simData, avgDeviation) {
     interpretationEl.innerHTML = `
         <div class="${qualityClass}">${qualityLabel}</div>
         <p>За ${simulationCount.toLocaleString()} симуляцій розіграшу з ${prizeCount} призами та ${participantCount} учасниками:</p>
-        <p>Середнє відхилення від теорії: <strong>${(avgDeviation * 100).toFixed(2)}%</strong>.
+        <p>Середнє відхилення від теорії: <strong>${(avgDeviation * 100).toFixed(2)}%</strong>,
+        очікуваний статистичний шум: <strong>~${(expectedAvgDeviation * 100).toFixed(2)}%</strong>
+        (коефіцієнт: ${deviationRatio.toFixed(2)}×).
         Максимальне відхилення: <strong>${(maxDeviation * 100).toFixed(2)}%</strong>
         у учасника «${escapeHtml(maxDeviationStat.name)}».</p>
         <p><strong>Теоретична ймовірність</strong> = K × w_i / W, де K — кількість призів,
-        w_i — вага учасника, W — сума всіх ваг. Це точне математичне очікування
+        w_i — вага учасника, W — сума всіх ваг. Це математичне очікування
         для зваженої вибірки без повернення.</p>
-        <p><strong>Висновок:</strong> Відмінності між фактичною та теоретичною ймовірністю —
-        нормальна статистична дисперсія при кінцевій кількості симуляцій.
-        Для підвищення точності збільшіть кількість симуляцій до ${betterSimCount.toLocaleString()}.</p>
+        <p><strong>Висновок:</strong> Оцінка базується на порівнянні з очікуваним статистичним шумом
+        при ${simulationCount.toLocaleString()} симуляціях. Відхилення ≤1.2× норми — відмінно,
+        ≤1.8× — добре, ≤3× — підвищена дисперсія, >3× — можлива проблема алгоритму.
+        Для ще вищої точності збільшіть кількість симуляцій до ${betterSimCount.toLocaleString()}.</p>
     `;
 }
 
