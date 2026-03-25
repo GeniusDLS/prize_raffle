@@ -1453,6 +1453,7 @@ function displaySimulationResults(participants, simData, exactProbabilities = nu
 
     // Таблиця та інтерпретація
     displaySimulationTable(stats, simulationCount, useExact);
+    drawSimulationChart(stats, simulationCount);
     displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio, useExact);
 
     showSimulationResults();
@@ -1561,6 +1562,153 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
 }
 
 /**
+ * Малює горизонтальний bar-chart: теоретична (DP) vs фактична ймовірність
+ * Колір фактичної смуги: зелений ≤1σ, жовтий ≤2σ, червоний >2σ
+ */
+function drawSimulationChart(stats, simulationCount) {
+    const canvas = document.getElementById('simulation-chart');
+    if (!canvas || !canvas.getContext) { return; }
+
+    const ctx = canvas.getContext('2d');
+    const n = stats.length;
+
+    const rowH      = 34;
+    const marginLeft   = 175;
+    const marginRight  = 65;
+    const marginTop    = 50;
+    const marginBottom = 30;
+
+    const W = Math.max(canvas.parentElement?.offsetWidth || 680, 420);
+    canvas.width  = W;
+    canvas.height = marginTop + n * rowH + marginBottom;
+    const chartW  = W - marginLeft - marginRight;
+
+    const maxProb = Math.max(...stats.map(s => Math.max(s.theoretical, s.empirical)));
+    const xMax    = Math.min(1, maxProb * 1.18);
+    const xScale  = v => marginLeft + (v / xMax) * chartW;
+
+    // Фон
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, canvas.height);
+
+    // ===== ЗАГОЛОВОК =====
+    ctx.fillStyle = '#495057';
+    ctx.font = 'bold 12px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Ймовірність перемоги: теоретична (DP) vs фактична', W / 2, 16);
+
+    // ===== ЛЕГЕНДА =====
+    const legendItems = [
+        { color: 'rgba(0,123,255,0.2)', stroke: '#007bff', label: 'Теоретична' },
+        { color: '#28a745', label: '≤1σ від теорії' },
+        { color: '#ffc107', label: '≤2σ від теорії' },
+        { color: '#dc3545', label: '>2σ від теорії' },
+    ];
+    let lx = marginLeft;
+    const ly = 36;
+    legendItems.forEach(item => {
+        ctx.fillStyle = item.color;
+        ctx.fillRect(lx, ly - 11, 16, 11);
+        if (item.stroke) {
+            ctx.strokeStyle = item.stroke;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(lx, ly - 11, 16, 11);
+        }
+        ctx.fillStyle = '#495057';
+        ctx.font = '11px Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(item.label, lx + 20, ly);
+        lx += ctx.measureText(item.label).width + 36;
+    });
+
+    // ===== РЯДКИ ДЛЯ КОЖНОГО УЧАСНИКА =====
+    stats.forEach((stat, i) => {
+        const y0 = marginTop + i * rowH;
+        const yc = y0 + rowH / 2;
+
+        // Зебра-фон
+        if (i % 2 === 1) {
+            ctx.fillStyle = '#f8f9fa';
+            ctx.fillRect(marginLeft, y0, chartW, rowH);
+        }
+
+        // Вертикальні сітчасті лінії (тихі)
+        ctx.strokeStyle = '#e9ecef';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 3]);
+        const tickCount = 5;
+        for (let t = 1; t <= tickCount; t++) {
+            const tx = xScale((xMax / tickCount) * t);
+            ctx.beginPath();
+            ctx.moveTo(tx, y0);
+            ctx.lineTo(tx, y0 + rowH);
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Смуга теоретична (тло, широка)
+        const theorH = rowH * 0.52;
+        ctx.fillStyle = 'rgba(0, 123, 255, 0.13)';
+        ctx.fillRect(marginLeft, yc - theorH / 2, xScale(stat.theoretical) - marginLeft, theorH);
+
+        // Смуга фактична (вужча, кольорова за σ)
+        const sigma  = Math.sqrt(stat.theoretical * (1 - stat.theoretical) / simulationCount);
+        const devAbs = Math.abs(stat.deviation);
+        const empH   = rowH * 0.38;
+        ctx.fillStyle = devAbs <= sigma ? '#28a745' : devAbs <= 2 * sigma ? '#ffc107' : '#dc3545';
+        ctx.globalAlpha = 0.82;
+        ctx.fillRect(marginLeft, yc - empH / 2, xScale(stat.empirical) - marginLeft, empH);
+        ctx.globalAlpha = 1;
+
+        // Пунктирна лінія теоретичного значення
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xScale(stat.theoretical), y0 + 3);
+        ctx.lineTo(xScale(stat.theoretical), y0 + rowH - 3);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Ім'я учасника
+        const name = stat.name.length > 22 ? stat.name.slice(0, 21) + '…' : stat.name;
+        ctx.fillStyle = '#333';
+        ctx.font = '12px Arial, sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(name, marginLeft - 8, yc + 4);
+
+        // Підпис справа від смуги
+        const labelX = Math.max(xScale(stat.empirical), xScale(stat.theoretical)) + 5;
+        ctx.fillStyle = '#495057';
+        ctx.font = '11px Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${(stat.empirical * 100).toFixed(1)}%`, labelX, yc + 4);
+    });
+
+    // ===== ВІС X =====
+    ctx.strokeStyle = '#adb5bd';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop);
+    ctx.lineTo(marginLeft, marginTop + n * rowH);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#adb5bd';
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop + n * rowH);
+    ctx.lineTo(marginLeft + chartW, marginTop + n * rowH);
+    ctx.stroke();
+
+    for (let t = 0; t <= tickCount; t++) {
+        const v = (xMax / tickCount) * t;
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '11px Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${(v * 100).toFixed(0)}%`, xScale(v), marginTop + n * rowH + 18);
+    }
+}
+
+/**
  * Оновлює значення картки результату симуляції
  */
 function updateSimulationResultValue(elementId, value, className = '') {
@@ -1628,6 +1776,14 @@ function clearSimulationResults() {
     const tableEl = document.getElementById('simulation-results-table');
     if (tableEl) { tableEl.innerHTML = ''; }
 
+    // Очистити canvas графіка
+    const chartCanvas = document.getElementById('simulation-chart');
+    if (chartCanvas && chartCanvas.getContext) {
+        const ctx = chartCanvas.getContext('2d');
+        ctx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        chartCanvas.height = 0;
+    }
+
     const interpretationEl = document.getElementById('simulation-interpretation-text');
     if (interpretationEl) { interpretationEl.innerHTML = ''; }
 }
@@ -1654,6 +1810,7 @@ window.FairnessTests = {
     calculateFairnessScore,
     simulateFullRaffles,
     computeExactInclusionProbabilities,
+    drawSimulationChart,
     normalCDF,
     // selectWeightedRandom тепер в raffle-engine.js з покращеним генератором
 
