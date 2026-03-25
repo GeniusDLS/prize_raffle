@@ -1290,7 +1290,10 @@ async function runSimulationTest() {
 
     try {
         const simData = await simulateFullRaffles(participants, prizeCount, simulationCount);
-        displaySimulationResults(participants, simData);
+        updateSimulationStatus('Обчислення точних теоретичних ймовірностей...');
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const exactProbabilities = computeExactInclusionProbabilities(participants, prizeCount);
+        displaySimulationResults(participants, simData, exactProbabilities);
         hideSimulationStatus();
     } catch (error) {
         window.Logger.error('[FairnessTests]', 'Помилка під час симуляції:', error);
@@ -1347,18 +1350,80 @@ async function simulateFullRaffles(participants, prizeCount, simulationCount) {
 }
 
 /**
+ * Обчислює точні ймовірності включення для зваженої вибірки без повернення
+ * Метод динамічного програмування по бітових масках переможців
+ * Повертає null якщо кількість станів перевищує ліміт (занадто повільно)
+ */
+function computeExactInclusionProbabilities(participants, prizeCount) {
+    const n = participants.length;
+    if (n > 30) return null; // обмеження bitmask на 30 біт
+
+    // Перевірити кількість станів C(n, prizeCount) ≤ 2 000 000
+    let maxStates = 1;
+    for (let i = 0; i < prizeCount; i++) {
+        maxStates = maxStates * (n - i) / (i + 1);
+        if (maxStates > 2_000_000) {
+            window.Logger.warn('[FairnessTests]', `Точне обчислення недоступне: C(${n},${prizeCount}) > 2M, використовується наближення`);
+            return null;
+        }
+    }
+
+    const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
+
+    // Кеш суми ваг для бітової маски (рекурсивний через найменший встановлений біт)
+    const weightCache = new Map([[0, 0]]);
+    function maskWeight(mask) {
+        if (weightCache.has(mask)) return weightCache.get(mask);
+        const lsb = mask & -mask;
+        const j = 31 - Math.clz32(lsb);
+        const w = maskWeight(mask ^ lsb) + participants[j].weight;
+        weightCache.set(mask, w);
+        return w;
+    }
+
+    // dp: Map бітова маска переможців → ймовірність цього набору
+    let current = new Map([[0, 1.0]]);
+
+    for (let round = 0; round < prizeCount; round++) {
+        const next = new Map();
+        for (const [mask, prob] of current) {
+            const remainingWeight = totalWeight - maskWeight(mask);
+            for (let j = 0; j < n; j++) {
+                if (mask & (1 << j)) continue; // вже переміг
+                const pj = participants[j].weight / remainingWeight;
+                const newMask = mask | (1 << j);
+                next.set(newMask, (next.get(newMask) || 0) + prob * pj);
+            }
+        }
+        current = next;
+    }
+
+    // Ймовірність включення учасника i = сума ймовірностей масок, де біт i встановлений
+    const pi = new Array(n).fill(0);
+    for (const [mask, prob] of current) {
+        for (let i = 0; i < n; i++) {
+            if (mask & (1 << i)) pi[i] += prob;
+        }
+    }
+
+    window.Logger.log('[FairnessTests]', `Точні ймовірності обчислено DP (${current.size} кінцевих станів)`);
+    return pi;
+}
+
+/**
  * Відображає результати симуляції
  */
-function displaySimulationResults(participants, simData) {
+function displaySimulationResults(participants, simData, exactProbabilities = null) {
     const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
     const { winCounts, simulationCount, prizeCount } = simData;
+    const useExact = exactProbabilities !== null;
 
-    // Обчислити статистику для кожного учасника
-    // Теоретична ймовірність: K × w_i / W — точне математичне очікування
-    // для зваженої вибірки без повернення (кожен учасник може виграти не більше 1 разу)
-    const stats = participants.map(p => {
+    // Теоретична ймовірність: точна (DP) або наближена K × w_i / W
+    const stats = participants.map((p, idx) => {
         const empirical = winCounts[p.name] / simulationCount;
-        const theoretical = Math.min(1, prizeCount * p.weight / totalWeight);
+        const theoretical = useExact
+            ? exactProbabilities[idx]
+            : Math.min(1, prizeCount * p.weight / totalWeight);
         const deviation = empirical - theoretical;
         return { ...p, wins: winCounts[p.name], empirical, theoretical, deviation };
     });
@@ -1387,8 +1452,8 @@ function displaySimulationResults(participants, simData) {
     updateSimulationResultValue('sim-avg-deviation', `${(avgDeviation * 100).toFixed(2)}% (очік. ~${(expectedAvgDeviation * 100).toFixed(2)}%)`);
 
     // Таблиця та інтерпретація
-    displaySimulationTable(stats, simulationCount);
-    displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio);
+    displaySimulationTable(stats, simulationCount, useExact);
+    displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio, useExact);
 
     showSimulationResults();
 }
@@ -1396,7 +1461,7 @@ function displaySimulationResults(participants, simData) {
 /**
  * Відображає таблицю ймовірностей учасників
  */
-function displaySimulationTable(stats, simulationCount) {
+function displaySimulationTable(stats, simulationCount, useExact = false) {
     const tableContainer = document.getElementById('simulation-results-table');
     if (!tableContainer) { return; }
 
@@ -1404,6 +1469,7 @@ function displaySimulationTable(stats, simulationCount) {
     const table = document.createElement('table');
     table.className = 'distribution-table';
 
+    const theorLabel = useExact ? 'Теоретична (точна, DP)' : 'Теоретична (K×w/W)';
     const header = `
         <thead>
             <tr>
@@ -1412,7 +1478,7 @@ function displaySimulationTable(stats, simulationCount) {
                 <th>Вага</th>
                 <th>Перемог (з ${simulationCount})</th>
                 <th>Фактична ймовірність</th>
-                <th>Теоретична ймовірність</th>
+                <th>${theorLabel}</th>
                 <th>Відхилення</th>
             </tr>
         </thead>
@@ -1447,7 +1513,7 @@ function displaySimulationTable(stats, simulationCount) {
 /**
  * Відображає інтерпретацію результатів симуляції
  */
-function displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio) {
+function displaySimulationInterpretation(stats, simData, avgDeviation, expectedAvgDeviation, deviationRatio, useExact = false) {
     const interpretationEl = document.getElementById('simulation-interpretation-text');
     if (!interpretationEl) { return; }
 
@@ -1466,7 +1532,7 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
         qualityLabel = '✅ ДОБРА ТОЧНІСТЬ';
     } else if (deviationRatio <= 3.0) {
         qualityClass = 'interpretation-warning';
-        qualityLabel = '⚡ ПІДВИЩЕНА ДИСПЕРСІЯ';
+        qualityLabel = '⚡ ЗАДОВІЛЬНА ТОЧНІСТЬ';
     } else {
         qualityClass = 'interpretation-bad';
         qualityLabel = '⚠️ АНОМАЛЬНА ДИСПЕРСІЯ';
@@ -1483,12 +1549,13 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
         (коефіцієнт: ${deviationRatio.toFixed(2)}×).
         Максимальне відхилення: <strong>${(maxDeviation * 100).toFixed(2)}%</strong>
         у учасника «${escapeHtml(maxDeviationStat.name)}».</p>
-        <p><strong>Теоретична ймовірність</strong> = K × w_i / W, де K — кількість призів,
-        w_i — вага учасника, W — сума всіх ваг. Це математичне очікування
-        для зваженої вибірки без повернення.</p>
+        ${useExact
+            ? `<p><strong>Теоретична ймовірність</strong> обчислена точно методом динамічного програмування (DP) — повністю враховує ефект вилучення переможців з пулу. Формула K×w/W не використовується.</p>`
+            : `<p><strong>Теоретична ймовірність</strong> ≈ K × w_i / W (наближення — не враховує ефект вилучення для учасників з підвищеною вагою).</p>`
+        }
         <p><strong>Висновок:</strong> Оцінка базується на порівнянні з очікуваним статистичним шумом
         при ${simulationCount.toLocaleString()} симуляціях. Відхилення ≤1.2× норми — відмінно,
-        ≤1.8× — добре, ≤3× — підвищена дисперсія, >3× — можлива проблема алгоритму.
+        ≤1.8× — добре, ≤3× — задовільна точність, >3× — можлива проблема алгоритму.
         Для ще вищої точності збільшіть кількість симуляцій до ${betterSimCount.toLocaleString()}.</p>
     `;
 }
@@ -1586,6 +1653,7 @@ window.FairnessTests = {
     calculateGiniIndex,
     calculateFairnessScore,
     simulateFullRaffles,
+    computeExactInclusionProbabilities,
     normalCDF,
     // selectWeightedRandom тепер в raffle-engine.js з покращеним генератором
 
