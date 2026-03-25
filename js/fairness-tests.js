@@ -1247,15 +1247,322 @@ function clearFairnessTestResults() {
     if (detailsEl) detailsEl.innerHTML = '';
 }
 
+// ===== СИМУЛЯЦІЯ РОЗІГРАШУ =====
+
+/**
+ * Запускає симуляцію повного розіграшу
+ * Моделює N повних розіграшів і виводить ймовірності для кожного учасника
+ */
+async function runSimulationTest() {
+    const countInput = document.getElementById('simulation-test-count');
+    const simulationCount = parseInt(countInput?.value) || TEST_CONSTANTS.DEFAULT_SIMULATIONS;
+
+    if (simulationCount < TEST_CONSTANTS.MIN_SIMULATIONS || simulationCount > TEST_CONSTANTS.MAX_SIMULATIONS) {
+        alert(`Кількість симуляцій має бути від ${TEST_CONSTANTS.MIN_SIMULATIONS} до ${TEST_CONSTANTS.MAX_SIMULATIONS}`);
+        return;
+    }
+
+    if (!window.DataManager?.participants?.length) {
+        alert('Додайте учасників на сторінці "Дані" для проведення симуляції!');
+        return;
+    }
+
+    if (!window.DataManager?.prizes?.length) {
+        alert('Додайте призи на сторінці "Дані" для проведення симуляції!');
+        return;
+    }
+
+    const participants = window.DataManager.participants;
+    const prizeCount = window.DataManager.prizes.length;
+
+    if (participants.length < 2) {
+        alert('Для симуляції потрібно мінімум 2 учасники!');
+        return;
+    }
+
+    if (prizeCount >= participants.length) {
+        alert('Кількість призів повинна бути меншою за кількість учасників для симуляції без повторень!');
+        return;
+    }
+
+    showSimulationStatus('Виконується симуляція розіграшу...', true);
+    hideSimulationResults();
+
+    try {
+        const simData = await simulateFullRaffles(participants, prizeCount, simulationCount);
+        displaySimulationResults(participants, simData);
+        hideSimulationStatus();
+    } catch (error) {
+        window.Logger.error('[FairnessTests]', 'Помилка під час симуляції:', error);
+        showSimulationStatus('Помилка під час виконання симуляції', false);
+    }
+}
+
+/**
+ * Симулює N повних розіграшів з вилученням переможців
+ * У кожному розіграші переможець виключається з пулу для наступних призів
+ */
+async function simulateFullRaffles(participants, prizeCount, simulationCount) {
+    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів × ${prizeCount} раундів...`);
+
+    const winCounts = {};
+    participants.forEach(p => {
+        winCounts[p.name] = 0;
+    });
+
+    const startTime = performance.now();
+
+    for (let sim = 0; sim < simulationCount; sim++) {
+        // Копія пулу учасників для цього розіграшу
+        const pool = participants.map(p => ({ ...p }));
+
+        // Розіграти кожен приз
+        for (let round = 0; round < prizeCount && pool.length > 0; round++) {
+            const winner = secureWeightedRandom(pool);
+            winCounts[winner.name]++;
+
+            // Вилучити переможця з пулу для наступних раундів
+            const idx = pool.findIndex(p => p.name === winner.name);
+            if (idx !== -1) {
+                pool.splice(idx, 1);
+            }
+        }
+
+        // Прогрес кожні 500 ітерацій
+        if (sim % 500 === 0 && sim > 0) {
+            updateSimulationStatus(`Проведено ${sim}/${simulationCount} симуляцій...`);
+            await new Promise(resolve => setTimeout(resolve, 1));
+        }
+    }
+
+    const endTime = performance.now();
+    window.Logger.log('[FairnessTests]', `Симуляція завершена за ${(endTime - startTime).toFixed(2)}мс`);
+
+    return {
+        winCounts,
+        simulationCount,
+        prizeCount,
+        participantCount: participants.length
+    };
+}
+
+/**
+ * Відображає результати симуляції
+ */
+function displaySimulationResults(participants, simData) {
+    const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
+    const { winCounts, simulationCount, prizeCount } = simData;
+
+    // Обчислити статистику для кожного учасника
+    // Теоретична ймовірність: K × w_i / W — точне математичне очікування
+    // для зваженої вибірки без повернення (кожен учасник може виграти не більше 1 разу)
+    const stats = participants.map(p => {
+        const empirical = winCounts[p.name] / simulationCount;
+        const theoretical = Math.min(1, prizeCount * p.weight / totalWeight);
+        const deviation = empirical - theoretical;
+        return { ...p, wins: winCounts[p.name], empirical, theoretical, deviation };
+    });
+
+    // Сортувати за теоретичною ймовірністю (від найвищої до найнижчої)
+    stats.sort((a, b) => b.theoretical - a.theoretical);
+
+    const maxProb = Math.max(...stats.map(s => s.empirical));
+    const minProb = Math.min(...stats.map(s => s.empirical));
+    const avgDeviation = stats.reduce((sum, s) => sum + Math.abs(s.deviation), 0) / stats.length;
+
+    // Оновити картки результатів
+    updateSimulationResultValue('sim-total-simulations', simulationCount.toLocaleString());
+    updateSimulationResultValue('sim-participants-count', participants.length.toString());
+    updateSimulationResultValue('sim-prize-count', prizeCount.toString());
+    updateSimulationResultValue('sim-max-probability', `${(maxProb * 100).toFixed(1)}%`);
+    updateSimulationResultValue('sim-min-probability', `${(minProb * 100).toFixed(1)}%`);
+    updateSimulationResultValue('sim-avg-deviation', `${(avgDeviation * 100).toFixed(2)}%`);
+
+    // Таблиця та інтерпретація
+    displaySimulationTable(stats, simulationCount);
+    displaySimulationInterpretation(stats, simData, avgDeviation);
+
+    showSimulationResults();
+}
+
+/**
+ * Відображає таблицю ймовірностей учасників
+ */
+function displaySimulationTable(stats, simulationCount) {
+    const tableContainer = document.getElementById('simulation-results-table');
+    if (!tableContainer) { return; }
+
+    const escapeHtml = window.UIController.escapeHtml;
+    const table = document.createElement('table');
+    table.className = 'distribution-table';
+
+    const header = `
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Учасник</th>
+                <th>Вага</th>
+                <th>Перемог (з ${simulationCount})</th>
+                <th>Фактична ймовірність</th>
+                <th>Теоретична ймовірність</th>
+                <th>Відхилення</th>
+            </tr>
+        </thead>
+    `;
+
+    const rows = stats.map((stat, index) => {
+        const empiricalPct = (stat.empirical * 100).toFixed(2);
+        const theoreticalPct = (stat.theoretical * 100).toFixed(2);
+        const deviationAbs = Math.abs(stat.deviation);
+        const deviationPct = (stat.deviation * 100).toFixed(2);
+        const deviationClass = getDeviationClass(deviationAbs);
+        const deviationPrefix = stat.deviation >= 0 ? '+' : '';
+
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${escapeHtml(stat.name)}</strong></td>
+                <td>${stat.weight}</td>
+                <td>${stat.wins}</td>
+                <td>${empiricalPct}%</td>
+                <td>${theoreticalPct}%</td>
+                <td class="${deviationClass}">${deviationPrefix}${deviationPct}%</td>
+            </tr>
+        `;
+    }).join('');
+
+    table.innerHTML = header + '<tbody>' + rows + '</tbody>';
+    tableContainer.innerHTML = '';
+    tableContainer.appendChild(table);
+}
+
+/**
+ * Відображає інтерпретацію результатів симуляції
+ */
+function displaySimulationInterpretation(stats, simData, avgDeviation) {
+    const interpretationEl = document.getElementById('simulation-interpretation-text');
+    if (!interpretationEl) { return; }
+
+    const { simulationCount, prizeCount, participantCount } = simData;
+    const maxDeviation = Math.max(...stats.map(s => Math.abs(s.deviation)));
+    const maxDeviationStat = stats.reduce((max, s) => Math.abs(s.deviation) > Math.abs(max.deviation) ? s : max, stats[0]);
+
+    let qualityClass, qualityLabel;
+    if (avgDeviation < 0.01) {
+        qualityClass = 'interpretation-good';
+        qualityLabel = '✅ ВІДМІННА ТОЧНІСТЬ';
+    } else if (avgDeviation < 0.02) {
+        qualityClass = 'interpretation-good';
+        qualityLabel = '✅ ДОБРА ТОЧНІСТЬ';
+    } else if (avgDeviation < 0.05) {
+        qualityClass = 'interpretation-warning';
+        qualityLabel = '⚡ ЗАДОВІЛЬНА ТОЧНІСТЬ';
+    } else {
+        qualityClass = 'interpretation-bad';
+        qualityLabel = '⚠️ ВИСОКА ДИСПЕРСІЯ';
+    }
+
+    const escapeHtml = window.UIController.escapeHtml;
+    const betterSimCount = Math.min(TEST_CONSTANTS.MAX_SIMULATIONS, simulationCount * 5);
+
+    interpretationEl.innerHTML = `
+        <div class="${qualityClass}">${qualityLabel}</div>
+        <p>За ${simulationCount.toLocaleString()} симуляцій розіграшу з ${prizeCount} призами та ${participantCount} учасниками:</p>
+        <p>Середнє відхилення від теорії: <strong>${(avgDeviation * 100).toFixed(2)}%</strong>.
+        Максимальне відхилення: <strong>${(maxDeviation * 100).toFixed(2)}%</strong>
+        у учасника «${escapeHtml(maxDeviationStat.name)}».</p>
+        <p><strong>Теоретична ймовірність</strong> = K × w_i / W, де K — кількість призів,
+        w_i — вага учасника, W — сума всіх ваг. Це точне математичне очікування
+        для зваженої вибірки без повернення.</p>
+        <p><strong>Висновок:</strong> Відмінності між фактичною та теоретичною ймовірністю —
+        нормальна статистична дисперсія при кінцевій кількості симуляцій.
+        Для підвищення точності збільшіть кількість симуляцій до ${betterSimCount.toLocaleString()}.</p>
+    `;
+}
+
+/**
+ * Оновлює значення картки результату симуляції
+ */
+function updateSimulationResultValue(elementId, value, className = '') {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = value;
+        element.className = `result-value ${className} updated`.trim();
+        setTimeout(() => element.classList.remove('updated'), 600);
+    }
+}
+
+// ===== ДОПОМІЖНІ ФУНКЦІЇ UI ДЛЯ СИМУЛЯЦІЇ =====
+
+function showSimulationStatus(message, isRunning = false) {
+    const statusEl = document.getElementById('simulation-test-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+        statusEl.className = isRunning ? 'test-status running' : 'test-status';
+        statusEl.style.display = 'block';
+    }
+}
+
+function updateSimulationStatus(message) {
+    const statusEl = document.getElementById('simulation-test-status');
+    if (statusEl) {
+        statusEl.textContent = message;
+    }
+}
+
+function hideSimulationStatus() {
+    const statusEl = document.getElementById('simulation-test-status');
+    if (statusEl) {
+        statusEl.style.display = 'none';
+    }
+}
+
+function showSimulationResults() {
+    const resultsEl = document.getElementById('simulation-test-results');
+    if (resultsEl) {
+        resultsEl.style.display = 'block';
+    }
+}
+
+function hideSimulationResults() {
+    const resultsEl = document.getElementById('simulation-test-results');
+    if (resultsEl) {
+        resultsEl.style.display = 'none';
+    }
+}
+
+function clearSimulationResults() {
+    hideSimulationResults();
+    hideSimulationStatus();
+
+    const resultIds = ['sim-total-simulations', 'sim-participants-count', 'sim-prize-count',
+        'sim-max-probability', 'sim-min-probability', 'sim-avg-deviation'];
+    resultIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = '-';
+            el.className = 'result-value';
+        }
+    });
+
+    const tableEl = document.getElementById('simulation-results-table');
+    if (tableEl) { tableEl.innerHTML = ''; }
+
+    const interpretationEl = document.getElementById('simulation-interpretation-text');
+    if (interpretationEl) { interpretationEl.innerHTML = ''; }
+}
+
 window.FairnessTests = {
     // Основні функції тестування
     runSequenceTest,
     runDistributionTest,
     runFairnessTest,
+    runSimulationTest,
     clearTestResults,
     clearDistributionTestResults,
     clearFairnessTestResults,
-    
+    clearSimulationResults,
+
     // Утилітарні функції (для розробки/дебагу)
     generateRandomSequence,
     calculateRunsTestStatistics,
@@ -1265,9 +1572,10 @@ window.FairnessTests = {
     calculateFairnessStatistics,
     calculateGiniIndex,
     calculateFairnessScore,
+    simulateFullRaffles,
     normalCDF,
     // selectWeightedRandom тепер в raffle-engine.js з покращеним генератором
-    
+
     // Константи
     TEST_CONSTANTS
 };
@@ -1279,5 +1587,7 @@ window.runDistributionTest = runDistributionTest;
 window.clearDistributionTestResults = clearDistributionTestResults;
 window.runFairnessTest = runFairnessTest;
 window.clearFairnessTestResults = clearFairnessTestResults;
+window.runSimulationTest = runSimulationTest;
+window.clearSimulationResults = clearSimulationResults;
 
 window.Logger.log('[FairnessTests]', '📁 Модуль тестів чесності завантажено (з тестом справедливості)');

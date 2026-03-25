@@ -18,7 +18,7 @@
                 <h1>Розіграш призів</h1>
                 <img src="logo.png" alt="Логотип" class="logo">
             </div>
-            <div class="app-version">v2.5.2</div>
+            <div class="app-version">v2.6.0</div>
         </div>
 
         <div class="nav-tabs">
@@ -517,6 +517,66 @@
                         </div>
                     </div>
                     
+                    <!-- Симуляція розіграшу -->
+                    <div class="test-section">
+                        <h4>🎲 Симуляція розіграшу</h4>
+                        <p>Моделює повний розіграш N разів: переможець кожного призу виключається з пулу. Показує фактичну та теоретичну ймовірність отримання призу для кожного учасника.</p>
+
+                        <div class="test-controls">
+                            <div class="form-group" style="align-items: center;">
+                                <label for="simulation-test-count">Кількість симуляцій:</label>
+                                <input type="number" id="simulation-test-count" value="1000" min="100" max="10000" step="100" style="width: 120px;">
+                                <button class="btn btn-primary" onclick="runSimulationTest()">🚀 Запустити</button>
+                                <button class="btn btn-secondary" onclick="clearSimulationResults()">🧹 Очистити</button>
+                            </div>
+                            <div class="participants-requirement">
+                                <small>⚠️ Для симуляції потрібно додати учасників і призи на сторінці "Дані"</small>
+                            </div>
+                        </div>
+
+                        <div id="simulation-test-status" class="test-status" style="display: none;"></div>
+
+                        <div id="simulation-test-results" class="test-results" style="display: none;">
+                            <h5>Результати симуляції розіграшу:</h5>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <div class="result-title">Симуляцій</div>
+                                    <div class="result-value" id="sim-total-simulations">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Учасників</div>
+                                    <div class="result-value" id="sim-participants-count">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Призів на розіграш</div>
+                                    <div class="result-value" id="sim-prize-count">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Найвища ймовірність</div>
+                                    <div class="result-value" id="sim-max-probability">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Найнижча ймовірність</div>
+                                    <div class="result-value" id="sim-min-probability">-</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-title">Сер. відхилення</div>
+                                    <div class="result-value" id="sim-avg-deviation">-</div>
+                                </div>
+                            </div>
+
+                            <div class="participants-stats">
+                                <h6>Ймовірності учасників (сортування: найвища очікувана ймовірність):</h6>
+                                <div id="simulation-results-table"></div>
+                            </div>
+
+                            <div class="test-interpretation">
+                                <h6>Інтерпретація результатів:</h6>
+                                <div id="simulation-interpretation-text"></div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="test-section" style="opacity: 0.6;">
                         <h4>🔄 Тест на період <span style="font-size: 0.8em; color: #999;">[Скоро]</span></h4>
                         <p>Перевірка того, що генератор не повторює послідовності через короткі інтервали.</p>
