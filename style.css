@@ -2062,3 +2062,355 @@ body {
         gap: 12px;
     }
 }
+
+
+/* ===== ✨ UI REDESIGN 2.0 — DARK COSMIC THEME ===== */
+
+/* --- 1. Body: темний космічний фон із кольоровими туманностями --- */
+body {
+    background: linear-gradient(135deg, #0d1117 0%, #161b27 50%, #0d1117 100%);
+    position: relative;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background:
+        radial-gradient(ellipse at 15% 40%, rgba(62, 180, 73, 0.07) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 15%, rgba(76, 110, 245, 0.07) 0%, transparent 50%),
+        radial-gradient(ellipse at 65% 85%, rgba(245, 158, 11, 0.05) 0%, transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+}
+
+/* --- 2. Заголовок: градієнтний текст --- */
+.header h1 {
+    font-size: 2.8em;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff 0%, #c5f0a4 50%, #3eb449 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    letter-spacing: -0.3px;
+    margin: 0;
+}
+
+.app-version {
+    background: rgba(62, 180, 73, 0.18);
+    border: 1px solid rgba(62, 180, 73, 0.45);
+    color: #a8d464;
+}
+
+/* --- 3. Індикатор автозбереження: темне скло --- */
+.auto-save-indicator {
+    background: rgba(13, 17, 23, 0.88);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.auto-save-indicator.saving {
+    background: rgba(255, 193, 7, 0.92);
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.auto-save-indicator.saved {
+    background: rgba(62, 180, 73, 0.92);
+    border-color: #3eb449;
+    color: white;
+}
+
+/* --- 4. Головна навігація: скляний ефект --- */
+.nav-tabs {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.nav-tab {
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 600;
+}
+
+.nav-tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-tab.active {
+    background: linear-gradient(135deg, #3EB449 0%, #4DB648 100%);
+    color: white;
+    box-shadow: 0 4px 20px rgba(62, 180, 73, 0.55);
+    transform: translateY(-2px);
+}
+
+/* --- 5. Сторінки: ефект скла --- */
+.page {
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border-radius: 20px;
+}
+
+/* --- 6. Кнопки: заокруглення + глибина --- */
+.btn {
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #3EB449 0%, #5ac75a 100%);
+    box-shadow: 0 4px 15px rgba(62, 180, 73, 0.35);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4cc75a 0%, #6dd46d 100%);
+    box-shadow: 0 6px 20px rgba(62, 180, 73, 0.55);
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(62, 180, 73, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #3EB449 0%, #5ac75a 100%);
+    box-shadow: 0 4px 15px rgba(62, 180, 73, 0.35);
+    border-radius: 12px;
+}
+
+.btn-danger {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-warning {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-secondary {
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.2);
+}
+
+/* CTA-кнопки розіграшу: таблетки з великим glow */
+.raffle-controls .btn {
+    border-radius: 50px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 1em;
+}
+
+.raffle-controls #start-raffle-btn {
+    background: linear-gradient(135deg, #3EB449 0%, #5ac75a 100%);
+    box-shadow: 0 8px 30px rgba(62, 180, 73, 0.55);
+    padding: 16px 40px;
+    font-size: 1.15em;
+}
+
+.raffle-controls #start-raffle-btn:hover {
+    box-shadow: 0 12px 40px rgba(62, 180, 73, 0.7);
+    transform: translateY(-3px) scale(1.02);
+}
+
+/* --- 7. Stat-картки: кожна зі своїм кольором --- */
+.stats .stat-card:nth-child(1) {
+    background: linear-gradient(135deg, #4c6ef5 0%, #364fc7 100%);
+    box-shadow: 0 6px 25px rgba(76, 110, 245, 0.4);
+}
+
+.stats .stat-card:nth-child(2) {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 6px 25px rgba(245, 158, 11, 0.4);
+}
+
+.stats .stat-card:nth-child(3) {
+    background: linear-gradient(135deg, #7950f2 0%, #5f3dc4 100%);
+    box-shadow: 0 6px 25px rgba(121, 80, 242, 0.4);
+}
+
+.stats .stat-card:hover {
+    transform: translateY(-4px) scale(1.02);
+}
+
+/* --- 8. Барабани: різні кольори для учасника і призу --- */
+/* Барабан учасника — синьо-фіолетовий */
+.drums-container .drum:nth-child(1) {
+    background: linear-gradient(145deg, #4c6ef5, #7950f2);
+    box-shadow: 0 12px 40px rgba(76, 110, 245, 0.45);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Барабан призу — золотисто-бурштиновий */
+.drums-container .drum:nth-child(2) {
+    background: linear-gradient(145deg, #f59e0b, #e67e22);
+    box-shadow: 0 12px 40px rgba(245, 158, 11, 0.45);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Glow при результаті: кольоровий для кожного барабану */
+.drums-container .drum:nth-child(1).result-highlight {
+    box-shadow: 0 12px 40px rgba(76, 110, 245, 0.5), 0 0 60px rgba(76, 110, 245, 0.65);
+    border-color: rgba(76, 110, 245, 0.9);
+    animation: drumGlowBlue 1.5s ease-in-out;
+}
+
+.drums-container .drum:nth-child(2).result-highlight {
+    box-shadow: 0 12px 40px rgba(245, 158, 11, 0.5), 0 0 60px rgba(245, 158, 11, 0.65);
+    border-color: rgba(245, 158, 11, 0.9);
+    animation: drumGlowGold 1.5s ease-in-out;
+}
+
+@keyframes drumGlowBlue {
+    0%   { box-shadow: 0 12px 40px rgba(76, 110, 245, 0.3), 0 0 20px rgba(76, 110, 245, 0.3); transform: scale(1); }
+    50%  { box-shadow: 0 16px 50px rgba(76, 110, 245, 0.6), 0 0 70px rgba(76, 110, 245, 0.7); transform: scale(1.03); }
+    100% { box-shadow: 0 12px 40px rgba(76, 110, 245, 0.4), 0 0 35px rgba(76, 110, 245, 0.5); transform: scale(1.02); }
+}
+
+@keyframes drumGlowGold {
+    0%   { box-shadow: 0 12px 40px rgba(245, 158, 11, 0.3), 0 0 20px rgba(245, 158, 11, 0.3); transform: scale(1); }
+    50%  { box-shadow: 0 16px 50px rgba(245, 158, 11, 0.6), 0 0 70px rgba(245, 158, 11, 0.7); transform: scale(1.03); }
+    100% { box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4), 0 0 35px rgba(245, 158, 11, 0.5); transform: scale(1.02); }
+}
+
+/* Текст барабанів: кольоровий акцент */
+.drums-container .drum:nth-child(1) .drum-content {
+    color: #364fc7;
+}
+
+.drums-container .drum:nth-child(1) .drum-content.result-highlight {
+    border-color: #4c6ef5;
+    box-shadow: 0 0 20px rgba(76, 110, 245, 0.35);
+}
+
+.drums-container .drum:nth-child(2) .drum-content {
+    color: #92400e;
+}
+
+.drums-container .drum:nth-child(2) .drum-content.result-highlight {
+    border-color: #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+}
+
+/* --- 9. Секції форм: м'який зелений градієнт --- */
+.form-section {
+    background: linear-gradient(135deg, #f0faf0 0%, #e8f5e8 100%);
+    border-left: 4px solid #3EB449;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(62, 180, 73, 0.08);
+}
+
+.storage-controls {
+    background: linear-gradient(135deg, #f0faf0 0%, #e8f5e8 100%);
+    border-left: 4px solid #3EB449;
+    border-radius: 14px;
+    box-shadow: 0 2px 15px rgba(62, 180, 73, 0.1);
+}
+
+/* --- 10. Підзакладки даних/налаштувань --- */
+.data-nav,
+.settings-nav {
+    background: rgba(248, 249, 250, 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* --- 11. Таблиці: плавний hover --- */
+.data-table tr:hover {
+    background: linear-gradient(90deg, #f0f8ff 0%, #e8f2ff 100%);
+}
+
+/* --- 12. Контейнер таблиці --- */
+.table-container {
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* --- 13. Логотип: зелений glow --- */
+.logo {
+    filter: drop-shadow(0 2px 8px rgba(62, 180, 73, 0.4));
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+.logo:hover {
+    transform: scale(1.15) rotate(8deg);
+    filter: drop-shadow(0 4px 18px rgba(62, 180, 73, 0.75));
+}
+
+/* --- 14. Popup: драматичний темний overlay --- */
+.popup-overlay {
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(10px);
+}
+
+.popup-content {
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(62, 180, 73, 0.3),
+                0 0 60px rgba(62, 180, 73, 0.15);
+}
+
+/* --- 15. Preset modal --- */
+.preset-modal {
+    border-radius: 18px;
+    box-shadow: 0 16px 60px rgba(0, 0, 0, 0.28);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.preset-card:hover {
+    border-color: #3EB449;
+    background: linear-gradient(135deg, #f0faf0, #e8f5e8);
+    box-shadow: 0 4px 15px rgba(62, 180, 73, 0.2);
+}
+
+/* --- 16. Картки налаштувань --- */
+.setting-item {
+    border-radius: 14px;
+    border-left-width: 5px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+}
+
+/* --- 17. Секції тестів чесності --- */
+.test-section {
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* --- 18. Результати тестів --- */
+.result-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.result-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* --- 19. Адаптація темної теми для мобільних --- */
+@media (max-width: 768px) {
+    .nav-tabs {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .drums-container .drum:nth-child(1),
+    .drums-container .drum:nth-child(2) {
+        max-width: 92vw;
+    }
+}
