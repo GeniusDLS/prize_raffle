@@ -1215,6 +1215,121 @@ function loadTestPreset(presetId) {
     window.Logger.log('[DataManager]', `Завантажено пресет "${preset.label}": ${participants.length} учасників, ${prizes.length} типів призів`);
 }
 
+// ===== РЕЗЕРВНА КОПІЯ STORAGE =====
+
+// Експортує всі ключі STORAGE_KEYS з localStorage у .json файл
+function exportStorage() {
+    try {
+        const backup = {};
+        for (const storageKey of Object.values(STORAGE_KEYS)) {
+            const value = localStorage.getItem(storageKey);
+            if (value !== null) {
+                backup[storageKey] = value;
+            }
+        }
+        backup._exportedAt = new Date().toISOString();
+        backup._version = document.querySelector('.app-version')?.textContent?.trim() || 'unknown';
+
+        const json = JSON.stringify(backup, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `raffle_backup_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        window.Logger.log('[DataManager]', 'Storage експортовано успішно');
+    } catch (error) {
+        window.Logger.error('[DataManager]', 'Помилка експорту storage:', error);
+        alert('Помилка при створенні резервної копії!');
+    }
+}
+
+// Відкриває діалог вибору .json файлу для імпорту storage
+function loadStorageData() {
+    const input = document.getElementById('storage-import-input');
+    if (input) input.click();
+}
+
+// Обробник завантаження .json файлу резервної копії
+function handleStorageImport(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.json')) {
+        alert('Підтримуються тільки файли .json!');
+        event.target.value = '';
+        return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        alert('Файл завеликий! Максимальний розмір: 5 МБ.');
+        event.target.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const backup = JSON.parse(e.target.result);
+
+            // Визначити, які категорії даних є у файлі
+            const hasParticipants = backup[STORAGE_KEYS.PARTICIPANTS] != null;
+            const hasPrizes = backup[STORAGE_KEYS.PRIZES] != null;
+            const hasResults = backup[STORAGE_KEYS.RESULTS] != null;
+            const hasSettings = backup[STORAGE_KEYS.ANIMATION_SETTINGS] != null
+                || backup[STORAGE_KEYS.THEME] != null;
+
+            const parts = [];
+            if (hasParticipants || hasPrizes) parts.push('учасників та призів');
+            if (hasResults) parts.push('результатів розіграшу');
+            if (hasSettings) parts.push('налаштувань');
+
+            const exportedAt = backup._exportedAt
+                ? new Date(backup._exportedAt).toLocaleString('uk-UA')
+                : 'невідомо';
+
+            const confirmMsg =
+                `Відновити дані з резервної копії?\n\n` +
+                `Файл містить: ${parts.join(', ')}\n` +
+                `Дата збереження: ${exportedAt}\n\n` +
+                `Поточні дані будуть замінені!`;
+
+            if (!confirm(confirmMsg)) {
+                event.target.value = '';
+                return;
+            }
+
+            // Записати тільки відомі ключі у localStorage
+            const knownKeys = new Set(Object.values(STORAGE_KEYS));
+            let restored = 0;
+            for (const [rawKey, rawValue] of Object.entries(backup)) {
+                if (rawKey.startsWith('_')) continue; // службові поля (_exportedAt, _version)
+                if (!knownKeys.has(rawKey)) continue;  // ігнорувати сторонні ключі
+                try {
+                    localStorage.setItem(rawKey, rawValue);
+                    restored++;
+                } catch (err) {
+                    window.Logger.error('[DataManager]', `Помилка запису ключа ${rawKey}:`, err);
+                }
+            }
+
+            window.Logger.log('[DataManager]', `Storage імпортовано: ${restored} ключів відновлено`);
+            alert(`✅ Резервну копію відновлено!\nВідновлено ключів: ${restored}\n\nСторінка буде перезавантажена.`);
+            location.reload();
+        } catch (error) {
+            window.Logger.error('[DataManager]', 'Помилка імпорту storage:', error);
+            alert('Помилка при читанні файлу резервної копії!\nПереконайтесь, що файл не пошкоджений.');
+        } finally {
+            event.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+}
+
 // ===== ФУНКЦІЇ ОЧИЩЕННЯ РЕЗУЛЬТАТІВ =====
 
 function clearResults() {
@@ -1288,6 +1403,9 @@ window.DataManager = {
     exportResultsToExcel,
     clearResults,
     restoreRaffleButtonState,
+    exportStorage,
+    loadStorageData,
+    handleStorageImport,
     
     // Функції сортування та перемішування
     sortParticipants,

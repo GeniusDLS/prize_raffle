@@ -3,6 +3,10 @@
  * Головний файл для ініціалізації та координації між модулями
  */
 
+// ===== ВЕРСІЯ ДОДАТКУ =====
+
+const APP_VERSION = 'v3.2.1';
+
 // ===== ІНІЦІАЛІЗАЦІЯ ДОДАТКУ =====
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,15 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
     
-    if (!window.FairnessTests) {
-        window.Logger.error('[Main]', 'FairnessTests не завантажено!');
-        return;
-    }
-    
     try {
         // 0. Завантажити збережену тему (до рендеру UI, щоб уникнути моргання)
         window.Logger.log('[Main]', 'Завантаження теми...');
         window.UIController.loadSavedTheme();
+
+        // Відобразити версію додатку
+        const versionEl = document.querySelector('.app-version');
+        if (versionEl) { versionEl.textContent = APP_VERSION; }
 
         // 1. Завантажити дані з localStorage
         window.Logger.log('[Main]', 'Завантаження збережених даних...');
@@ -213,9 +216,13 @@ window.clearStoredData = function() {
     if (window.DataManager) window.DataManager.clearStoredData();
 };
 
-// clearResults видалено - використовується напряму з DataManager
+    window.exportStorage = function() {
+        if (window.DataManager) window.DataManager.exportStorage();
+    };
 
-// Функції popup
+    window.loadStorageData = function() {
+        if (window.DataManager) window.DataManager.loadStorageData();
+    };
 window.showWinnerPopup = function(winnerName, winnerPosition, winnerDivision, prizeName) {
     if (window.RaffleEngine) window.RaffleEngine.showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName);
 };
@@ -226,37 +233,98 @@ window.hideWinnerPopup = function() {
 
 // Функції налаштувань анімації видалено - використовуються напряму з RaffleEngine
 
+// ===== ЛІНИВЕ ЗАВАНТАЖЕННЯ МОДУЛІВ ТЕСТУВАННЯ =====
+
+// Модулі завантажуються у суворому порядку залежностей:
+//   fairness-tests.js → fairness-sequence-test.js → fairness-distribution-test.js
+//   → fairness-fairness-test.js → fairness-simulation-test.js
+const FAIRNESS_MODULES = [
+    'js/fairness-tests.js?v=3.2.0',
+    'js/fairness-sequence-test.js?v=3.2.0',
+    'js/fairness-distribution-test.js?v=3.2.0',
+    'js/fairness-fairness-test.js?v=3.2.0',
+    'js/fairness-simulation-test.js?v=3.2.0',
+];
+
+let _fairnessLoading = false;
+let _fairnessLoaded = false;
+let _fairnessCallbacks = [];
+
+/**
+ * Завантажує fairness-модулі динамічно, послідовно, по одному разу.
+ * Після завершення викликає всі накопичені колбеки.
+ */
+function loadFairnessModules(callback) {
+    if (_fairnessLoaded) {
+        callback();
+        return;
+    }
+
+    _fairnessCallbacks.push(callback);
+
+    if (_fairnessLoading) {
+        // Вже завантажується — колбек буде викликано після завершення
+        return;
+    }
+
+    _fairnessLoading = true;
+    window.Logger.log('[Main]', 'Ліниве завантаження модулів тестування...');
+
+    // Послідовне завантаження через ланцюжок Promise
+    FAIRNESS_MODULES.reduce((chain, src) => {
+        return chain.then(() => new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Не вдалось завантажити: ${src}`));
+            document.head.appendChild(script);
+        }));
+    }, Promise.resolve())
+        .then(() => {
+            _fairnessLoaded = true;
+            _fairnessLoading = false;
+            window.Logger.log('[Main]', 'Модулі тестування завантажено');
+            _fairnessCallbacks.forEach(cb => cb());
+            _fairnessCallbacks = [];
+        })
+        .catch(err => {
+            _fairnessLoading = false;
+            _fairnessCallbacks = [];
+            window.Logger.error('[Main]', 'Помилка завантаження модулів тестування:', err);
+        });
+}
+
 // Функції тестів чесності
 window.runSequenceTest = function() {
-    if (window.FairnessTests) window.FairnessTests.runSequenceTest();
+    loadFairnessModules(() => window.FairnessTests.runSequenceTest());
 };
 
 window.clearTestResults = function() {
-    if (window.FairnessTests) window.FairnessTests.clearTestResults();
+    loadFairnessModules(() => window.FairnessTests.clearTestResults());
 };
 
 window.runDistributionTest = function() {
-    if (window.FairnessTests) window.FairnessTests.runDistributionTest();
+    loadFairnessModules(() => window.FairnessTests.runDistributionTest());
 };
 
 window.clearDistributionTestResults = function() {
-    if (window.FairnessTests) window.FairnessTests.clearDistributionTestResults();
+    loadFairnessModules(() => window.FairnessTests.clearDistributionTestResults());
 };
 
 window.runFairnessTest = function() {
-    if (window.FairnessTests) window.FairnessTests.runFairnessTest();
+    loadFairnessModules(() => window.FairnessTests.runFairnessTest());
 };
 
 window.clearFairnessTestResults = function() {
-    if (window.FairnessTests) window.FairnessTests.clearFairnessTestResults();
+    loadFairnessModules(() => window.FairnessTests.clearFairnessTestResults());
 };
 
 window.runSimulationTest = function() {
-    if (window.FairnessTests) window.FairnessTests.runSimulationTest();
+    loadFairnessModules(() => window.FairnessTests.runSimulationTest());
 };
 
 window.clearSimulationResults = function() {
-    if (window.FairnessTests) window.FairnessTests.clearSimulationResults();
+    loadFairnessModules(() => window.FairnessTests.clearSimulationResults());
 };
 
 // Функції налаштувань
@@ -447,7 +515,7 @@ window.Main = {
     importState: window.importAppState,
     
     // Версія
-    version: 'v3.1.1',
+    version: APP_VERSION,
     
     // Інформація про модулі
     info: function() {

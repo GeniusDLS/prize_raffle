@@ -44,7 +44,7 @@
             </div>
             <div class="navbar-end">
                 <a href="https://send.monobank.ua/jar/2Rumu89c2v" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm gap-1">
-                    <span class="app-version badge badge-outline text-xs">v3.1.6</span>
+                    <span class="app-version badge badge-outline text-xs"></span>
                     <span class="hidden sm:inline text-xs opacity-70">☕ На каву</span>
                 </a>
             </div>
@@ -150,6 +150,7 @@
             </div>
 
             <input type="file" id="excel-input" accept=".xlsx,.xls" class="hidden" onchange="window.DataManager.handleExcelLoad(event)">
+            <input type="file" id="storage-import-input" accept=".json" class="hidden" onchange="window.DataManager.handleStorageImport(event)">
         </div>
 
         <!-- ===== СТОРІНКА РОЗІГРАШУ ===== -->
@@ -244,6 +245,7 @@
                         <button role="tab" class="tab tab-active settings-tab" data-tab-id="animation" onclick="showSettingsTab('animation')">🎬 Анімація</button>
                         <button role="tab" class="tab settings-tab" data-tab-id="tests" onclick="showSettingsTab('tests')">🧪 Тести чесності</button>
                         <button role="tab" class="tab settings-tab" data-tab-id="theme" onclick="showSettingsTab('theme')">🎨 Тема</button>
+                        <button role="tab" class="tab settings-tab" data-tab-id="storage" onclick="showSettingsTab('storage')">💾 Дані</button>
                     </div>
 
                     <!-- ВКЛАДКА АНІМАЦІЇ — АКОРДЕОН -->
@@ -373,125 +375,144 @@
 
                     <!-- ВКЛАДКА ТЕСТІВ ЧЕСНОСТІ -->
                     <div id="tests-settings" class="settings-content">
-                        <p class="text-sm text-base-content/60 mb-6">Перевірте якість та справедливість алгоритму розіграшу за допомогою статистичних тестів</p>
+                        <p class="text-sm text-base-content/60 mb-4">Перевірте якість та справедливість алгоритму розіграшу за допомогою статистичних тестів</p>
 
-                        <div class="test-section">
-                            <h4>🔍 Тест послідовностей (Runs Test)</h4>
-                            <p>Перевіряє наявність патернів у послідовності випадкових чисел. Хороший генератор не повинен мати передбачуваних послідовностей.</p>
-                            <div class="test-controls">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <label class="text-sm font-medium">Кількість симуляцій:</label>
-                                    <input type="number" id="runs-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
-                                    <button class="btn btn-primary btn-sm" onclick="runSequenceTest()">🚀 Запустити тест</button>
-                                    <button class="btn btn-neutral btn-sm" onclick="clearTestResults()">🧹 Очистити</button>
-                                </div>
-                            </div>
-                            <div id="sequence-test-status" class="test-status" style="display: none;"></div>
-                            <div id="sequence-test-results" class="test-results" style="display: none;">
-                                <h5>Результати тесту послідовностей:</h5>
-                                <div class="results-grid">
-                                    <div class="result-card"><div class="result-title">Всього симуляцій</div><div class="result-value" id="total-simulations">-</div></div>
-                                    <div class="result-card"><div class="result-title">Середня кількість серій</div><div class="result-value" id="average-runs">-</div></div>
-                                    <div class="result-card"><div class="result-title">Очікувана кількість серій</div><div class="result-value" id="expected-runs">-</div></div>
-                                    <div class="result-card"><div class="result-title">Статистика Z</div><div class="result-value" id="z-statistic">-</div></div>
-                                    <div class="result-card"><div class="result-title">P-value</div><div class="result-value" id="p-value">-</div></div>
-                                    <div class="result-card"><div class="result-title">Результат тесту</div><div class="result-value" id="test-result">-</div></div>
-                                </div>
-                                <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="interpretation-text"></div></div>
-                                <div class="test-details"><h6>Деталі тестування:</h6><div id="test-details-content"></div></div>
-                            </div>
-                        </div>
+                        <div class="join join-vertical w-full">
 
-                        <div class="test-section">
-                            <h4>📈 Тест розподілу (Chi-square)</h4>
-                            <p>Перевірка відповідності результатів розіграшу очікуваному розподілу з урахуванням ваги учасників. Проводиться на реальних даних.</p>
-                            <div class="test-controls">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <label class="text-sm font-medium">Кількість симуляцій:</label>
-                                    <input type="number" id="distribution-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
-                                    <button class="btn btn-primary btn-sm" onclick="runDistributionTest()">🚀 Запустити тест</button>
-                                    <button class="btn btn-neutral btn-sm" onclick="clearDistributionTestResults()">🧹 Очистити</button>
+                            <!-- Тест послідовностей -->
+                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                <summary class="collapse-title font-medium">🔍 Тест послідовностей (Runs Test)</summary>
+                                <div class="collapse-content">
+                                    <p class="text-sm text-base-content/70 mb-3">Перевіряє наявність патернів у послідовності випадкових чисел. Хороший генератор не повинен мати передбачуваних послідовностей.</p>
+                                    <div class="test-controls">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <input type="number" id="runs-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
+                                            <button class="btn btn-primary btn-sm" onclick="runSequenceTest()">🚀 Запустити тест</button>
+                                            <button class="btn btn-neutral btn-sm" onclick="clearTestResults()">🧹 Очистити</button>
+                                        </div>
+                                    </div>
+                                    <div id="sequence-test-status" class="test-status" style="display: none;"></div>
+                                    <div id="sequence-test-results" class="test-results" style="display: none;">
+                                        <h5>Результати тесту послідовностей:</h5>
+                                        <div class="results-grid">
+                                            <div class="result-card"><div class="result-title">Всього симуляцій</div><div class="result-value" id="total-simulations">-</div></div>
+                                            <div class="result-card"><div class="result-title">Середня кількість серій</div><div class="result-value" id="average-runs">-</div></div>
+                                            <div class="result-card"><div class="result-title">Очікувана кількість серій</div><div class="result-value" id="expected-runs">-</div></div>
+                                            <div class="result-card"><div class="result-title">Статистика Z</div><div class="result-value" id="z-statistic">-</div></div>
+                                            <div class="result-card"><div class="result-title">P-value</div><div class="result-value" id="p-value">-</div></div>
+                                            <div class="result-card"><div class="result-title">Результат тесту</div><div class="result-value" id="test-result">-</div></div>
+                                        </div>
+                                        <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="interpretation-text"></div></div>
+                                        <div class="test-details"><h6>Деталі тестування:</h6><div id="test-details-content"></div></div>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-warning mt-2">⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</p>
-                            </div>
-                            <div id="distribution-test-status" class="test-status" style="display: none;"></div>
-                            <div id="distribution-test-results" class="test-results" style="display: none;">
-                                <h5>Результати тесту розподілу:</h5>
-                                <div class="results-grid">
-                                    <div class="result-card"><div class="result-title">Всього симуляцій</div><div class="result-value" id="dist-total-simulations">-</div></div>
-                                    <div class="result-card"><div class="result-title">Учасників у тесті</div><div class="result-value" id="dist-participants-count">-</div></div>
-                                    <div class="result-card"><div class="result-title">Ступені свободи</div><div class="result-value" id="dist-degrees-freedom">-</div></div>
-                                    <div class="result-card"><div class="result-title">χ² статистика</div><div class="result-value" id="dist-chi-square">-</div></div>
-                                    <div class="result-card"><div class="result-title">Критичне значення</div><div class="result-value" id="dist-critical-value">-</div></div>
-                                    <div class="result-card"><div class="result-title">Результат тесту</div><div class="result-value" id="dist-test-result">-</div></div>
-                                </div>
-                                <div class="participants-stats"><h6>Статистика по учасниках:</h6><div id="participants-distribution-table"></div></div>
-                                <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="dist-interpretation-text"></div></div>
-                                <div class="test-details"><h6>Деталі тестування:</h6><div id="dist-test-details-content"></div></div>
-                            </div>
-                        </div>
+                            </details>
 
-                        <div class="test-section">
-                            <h4>🎯 Тест справедливості</h4>
-                            <p>Комплексна перевірка справедливості алгоритму: довірчі інтервали, індекс Джині та загальний бал справедливості.</p>
-                            <div class="test-controls">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <label class="text-sm font-medium">Кількість симуляцій:</label>
-                                    <input type="number" id="fairness-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
-                                    <button class="btn btn-primary btn-sm" onclick="runFairnessTest()">🚀 Запустити тест</button>
-                                    <button class="btn btn-neutral btn-sm" onclick="clearFairnessTestResults()">🧹 Очистити</button>
+                            <!-- Тест розподілу -->
+                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                <summary class="collapse-title font-medium">📈 Тест розподілу (Chi-square)</summary>
+                                <div class="collapse-content">
+                                    <p class="text-sm text-base-content/70 mb-3">Перевірка відповідності результатів розіграшу очікуваному розподілу з урахуванням ваги учасників. Проводиться на реальних даних.</p>
+                                    <div class="test-controls">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <input type="number" id="distribution-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
+                                            <button class="btn btn-primary btn-sm" onclick="runDistributionTest()">🚀 Запустити тест</button>
+                                            <button class="btn btn-neutral btn-sm" onclick="clearDistributionTestResults()">🧹 Очистити</button>
+                                        </div>
+                                        <p class="text-xs text-warning mt-2">⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</p>
+                                    </div>
+                                    <div id="distribution-test-status" class="test-status" style="display: none;"></div>
+                                    <div id="distribution-test-results" class="test-results" style="display: none;">
+                                        <h5>Результати тесту розподілу:</h5>
+                                        <div class="results-grid">
+                                            <div class="result-card"><div class="result-title">Всього симуляцій</div><div class="result-value" id="dist-total-simulations">-</div></div>
+                                            <div class="result-card"><div class="result-title">Учасників у тесті</div><div class="result-value" id="dist-participants-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">Ступені свободи</div><div class="result-value" id="dist-degrees-freedom">-</div></div>
+                                            <div class="result-card"><div class="result-title">χ² статистика</div><div class="result-value" id="dist-chi-square">-</div></div>
+                                            <div class="result-card"><div class="result-title">Критичне значення</div><div class="result-value" id="dist-critical-value">-</div></div>
+                                            <div class="result-card"><div class="result-title">Результат тесту</div><div class="result-value" id="dist-test-result">-</div></div>
+                                        </div>
+                                        <div class="participants-stats"><h6>Статистика по учасниках:</h6><div id="participants-distribution-table"></div></div>
+                                        <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="dist-interpretation-text"></div></div>
+                                        <div class="test-details"><h6>Деталі тестування:</h6><div id="dist-test-details-content"></div></div>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-warning mt-2">⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</p>
-                            </div>
-                            <div id="fairness-test-status" class="test-status" style="display: none;"></div>
-                            <div id="fairness-test-results" class="test-results" style="display: none;">
-                                <h5>Результати тесту справедливості:</h5>
-                                <div class="results-grid">
-                                    <div class="result-card"><div class="result-title">Розіграші × Раунди = Перемоги</div><div class="result-value" id="fair-total-simulations">-</div></div>
-                                    <div class="result-card"><div class="result-title">Учасників у тесті</div><div class="result-value" id="fair-participants-count">-</div></div>
-                                    <div class="result-card"><div class="result-title">У довірчих інтервалах</div><div class="result-value" id="fair-confidence-count">-</div></div>
-                                    <div class="result-card"><div class="result-title">Індекс Джині</div><div class="result-value" id="fair-gini-index">-</div></div>
-                                    <div class="result-card"><div class="result-title">Макс. відхилення</div><div class="result-value" id="fair-max-deviation">-</div></div>
-                                    <div class="result-card"><div class="result-title">Бал справедливості</div><div class="result-value" id="fair-score">-</div></div>
-                                </div>
-                                <div class="fairness-intervals"><h6>Довірчі інтервали учасників:</h6><div id="fairness-intervals-table"></div></div>
-                                <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="fair-interpretation-text"></div></div>
-                                <div class="test-details"><h6>Деталі тестування:</h6><div id="fair-test-details-content"></div></div>
-                            </div>
-                        </div>
+                            </details>
 
-                        <div class="test-section">
-                            <h4>🎲 Симуляція розіграшу</h4>
-                            <p>Моделює повний розіграш N разів: переможець кожного призу виключається з пулу. Показує фактичну та теоретичну ймовірність отримання призу.</p>
-                            <div class="test-controls">
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <label class="text-sm font-medium">Кількість симуляцій:</label>
-                                    <input type="number" id="simulation-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
-                                    <button class="btn btn-primary btn-sm" onclick="runSimulationTest()">🚀 Запустити</button>
-                                    <button class="btn btn-neutral btn-sm" onclick="clearSimulationResults()">🧹 Очистити</button>
+                            <!-- Тест справедливості -->
+                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                <summary class="collapse-title font-medium">🎯 Тест справедливості</summary>
+                                <div class="collapse-content">
+                                    <p class="text-sm text-base-content/70 mb-3">Комплексна перевірка справедливості алгоритму: довірчі інтервали, індекс Джині та загальний бал справедливості.</p>
+                                    <div class="test-controls">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <input type="number" id="fairness-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
+                                            <button class="btn btn-primary btn-sm" onclick="runFairnessTest()">🚀 Запустити тест</button>
+                                            <button class="btn btn-neutral btn-sm" onclick="clearFairnessTestResults()">🧹 Очистити</button>
+                                        </div>
+                                        <p class="text-xs text-warning mt-2">⚠️ Для цього тесту потрібно додати учасників на сторінці "Дані"</p>
+                                    </div>
+                                    <div id="fairness-test-status" class="test-status" style="display: none;"></div>
+                                    <div id="fairness-test-results" class="test-results" style="display: none;">
+                                        <h5>Результати тесту справедливості:</h5>
+                                        <div class="results-grid">
+                                            <div class="result-card"><div class="result-title">Розіграші × Раунди = Перемоги</div><div class="result-value" id="fair-total-simulations">-</div></div>
+                                            <div class="result-card"><div class="result-title">Учасників у тесті</div><div class="result-value" id="fair-participants-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">У довірчих інтервалах</div><div class="result-value" id="fair-confidence-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">Індекс Джині</div><div class="result-value" id="fair-gini-index">-</div></div>
+                                            <div class="result-card"><div class="result-title">Макс. відхилення</div><div class="result-value" id="fair-max-deviation">-</div></div>
+                                            <div class="result-card"><div class="result-title">Бал справедливості</div><div class="result-value" id="fair-score">-</div></div>
+                                        </div>
+                                        <div class="fairness-intervals"><h6>Довірчі інтервали учасників:</h6><div id="fairness-intervals-table"></div></div>
+                                        <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="fair-interpretation-text"></div></div>
+                                        <div class="test-details"><h6>Деталі тестування:</h6><div id="fair-test-details-content"></div></div>
+                                    </div>
                                 </div>
-                                <p class="text-xs text-warning mt-2">⚠️ Для симуляції потрібно додати учасників і призи на сторінці "Дані"</p>
-                            </div>
-                            <div id="simulation-test-status" class="test-status" style="display: none;"></div>
-                            <div id="simulation-test-results" class="test-results" style="display: none;">
-                                <h5>Результати симуляції розіграшу:</h5>
-                                <div class="results-grid">
-                                    <div class="result-card"><div class="result-title">Симуляцій</div><div class="result-value" id="sim-total-simulations">-</div></div>
-                                    <div class="result-card"><div class="result-title">Учасників</div><div class="result-value" id="sim-participants-count">-</div></div>
-                                    <div class="result-card"><div class="result-title">Призів на розіграш</div><div class="result-value" id="sim-prize-count">-</div></div>
-                                    <div class="result-card"><div class="result-title">Найвища ймовірність</div><div class="result-value" id="sim-max-probability">-</div></div>
-                                    <div class="result-card"><div class="result-title">Найнижча ймовірність</div><div class="result-value" id="sim-min-probability">-</div></div>
-                                    <div class="result-card"><div class="result-title">Сер. відхилення</div><div class="result-value" id="sim-avg-deviation">-</div></div>
-                                </div>
-                                <div class="simulation-chart-container"><canvas id="simulation-chart"></canvas></div>
-                                <div class="participants-stats"><h6>Ймовірності учасників (сортування: найвища очікувана):</h6><div id="simulation-results-table"></div></div>
-                                <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="simulation-interpretation-text"></div></div>
-                            </div>
-                        </div>
+                            </details>
 
-                        <div class="test-section opacity-60">
-                            <h4>🔄 Тест на період <span class="text-sm text-base-content/40 font-normal">[Скоро]</span></h4>
-                            <p>Перевірка того, що генератор не повторює послідовності через короткі інтервали.</p>
+                            <!-- Симуляція розіграшу -->
+                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                <summary class="collapse-title font-medium">🎲 Симуляція розіграшу</summary>
+                                <div class="collapse-content">
+                                    <p class="text-sm text-base-content/70 mb-3">Моделює повний розіграш N разів: переможець кожного призу виключається з пулу. Показує фактичну та теоретичну ймовірність отримання призу.</p>
+                                    <div class="test-controls">
+                                        <div class="flex flex-wrap items-center gap-3">
+                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <input type="number" id="simulation-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
+                                            <button class="btn btn-primary btn-sm" onclick="runSimulationTest()">🚀 Запустити</button>
+                                            <button class="btn btn-neutral btn-sm" onclick="clearSimulationResults()">🧹 Очистити</button>
+                                        </div>
+                                        <p class="text-xs text-warning mt-2">⚠️ Для симуляції потрібно додати учасників і призи на сторінці "Дані"</p>
+                                    </div>
+                                    <div id="simulation-test-status" class="test-status" style="display: none;"></div>
+                                    <div id="simulation-test-results" class="test-results" style="display: none;">
+                                        <h5>Результати симуляції розіграшу:</h5>
+                                        <div class="results-grid">
+                                            <div class="result-card"><div class="result-title">Симуляцій</div><div class="result-value" id="sim-total-simulations">-</div></div>
+                                            <div class="result-card"><div class="result-title">Учасників</div><div class="result-value" id="sim-participants-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">Призів на розіграш</div><div class="result-value" id="sim-prize-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">Найвища ймовірність</div><div class="result-value" id="sim-max-probability">-</div></div>
+                                            <div class="result-card"><div class="result-title">Найнижча ймовірність</div><div class="result-value" id="sim-min-probability">-</div></div>
+                                            <div class="result-card"><div class="result-title">Сер. відхилення</div><div class="result-value" id="sim-avg-deviation">-</div></div>
+                                        </div>
+                                        <div class="simulation-chart-container"><canvas id="simulation-chart"></canvas></div>
+                                        <div class="participants-stats"><h6>Ймовірності учасників (сортування: найвища очікувана):</h6><div id="simulation-results-table"></div></div>
+                                        <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="simulation-interpretation-text"></div></div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <!-- Тест на період (скоро) -->
+                            <div class="collapse join-item border border-base-300 bg-base-100 opacity-60 cursor-not-allowed">
+                                <div class="collapse-title font-medium">🔄 Тест на період <span class="text-sm text-base-content/40 font-normal">[Скоро]</span></div>
+                                <div class="collapse-content">
+                                    <p class="text-sm text-base-content/70">Перевірка того, що генератор не повторює послідовності через короткі інтервали.</p>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -500,6 +521,21 @@
                         <p class="text-sm text-base-content/60 mb-6">Оберіть кольорову палітру для інтерфейсу. Вибір зберігається автоматично.</p>
                         <div class="theme-picker-grid" id="theme-picker-grid">
                             <!-- Картки тем рендеряться через renderThemePicker() -->
+                        </div>
+                    </div>
+
+                    <!-- ВКЛАДКА ДАНИХ -->
+                    <div id="storage-settings" class="settings-content">
+                        <p class="text-sm text-base-content/60 mb-6">Резервне копіювання та відновлення всіх даних додатку (учасники, призи, результати, налаштування).</p>
+                        <div class="flex flex-wrap gap-4">
+                            <div>
+                                <p class="text-sm text-base-content/60 mb-3">Зберегти всі поточні дані у <code>.json</code> файл на диск.</p>
+                                <button class="btn btn-info btn-sm" onclick="exportStorage()">💾 Зберегти бекап</button>
+                            </div>
+                            <div>
+                                <p class="text-sm text-base-content/60 mb-3">Завантажити раніше збережений <code>.json</code> файл. Перед застосуванням буде запит на підтвердження.</p>
+                                <button class="btn btn-info btn-sm" onclick="loadStorageData()">📂 Відновити з файлу</button>
+                            </div>
                         </div>
                     </div>
 
@@ -567,11 +603,6 @@
     <script src="js/sound-manager.js?v=3.1.6"></script>
     <script src="js/raffle-engine.js?v=3.0.0"></script>
     <script src="js/ui-controller.js?v=3.0.0"></script>
-    <script src="js/fairness-tests.js?v=3.1.0"></script>
-    <script src="js/fairness-sequence-test.js?v=3.1.0"></script>
-    <script src="js/fairness-distribution-test.js?v=3.1.0"></script>
-    <script src="js/fairness-fairness-test.js?v=3.1.0"></script>
-    <script src="js/fairness-simulation-test.js?v=3.1.0"></script>
-    <script src="js/main.js?v=3.1.0"></script>
+    <script src="js/main.js?v=3.2.0"></script>
 </body>
 </html>
