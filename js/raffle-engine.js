@@ -26,6 +26,12 @@ let animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
 
 // ===== ЛОГІКА РОЗІГРАШУ =====
 
+// Активні таймери та інтервали розіграшу (для можливості скидання під час анімації)
+let activeSpinInterval = null;
+let activeSpinTimeout = null;
+let activeHighlightTimeout = null;
+let activeResultHighlightTimeout = null;
+
 function startRaffle() {
     // Отримуємо дані з DataManager
     const participants = window.DataManager.participants;
@@ -93,7 +99,7 @@ function nextRound() {
     }
 
     // Показати випадкові імена під час обертання
-    const spinInterval = setInterval(() => {
+    activeSpinInterval = setInterval(() => {
         if (participantDrum && availableParticipants.length > 0) {
             setDrumText(participantDrum, availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name);
         }
@@ -103,9 +109,10 @@ function nextRound() {
     }, animationSettings.spinSpeed);
 
     // Зупинити через налаштований час і показати результат
-    setTimeout(() => {
+    activeSpinTimeout = setTimeout(() => {
         // Спочатку зупинити зміну тексту
-        clearInterval(spinInterval);
+        clearInterval(activeSpinInterval);
+        activeSpinInterval = null;
         
         // Зупинити звук обертання
         if (window.SoundManager) {
@@ -151,7 +158,7 @@ function nextRound() {
 
         // Прибрати клас уповільнення та додати підсвічування після завершення анімації
         const highlightDelay = animationSettings.slowDownEffect ? animationSettings.slowDownDuration * 1000 : 0;
-        setTimeout(() => {
+        activeHighlightTimeout = setTimeout(() => {
             if (participantDrum) {
                 participantDrum.classList.remove('slowing-down');
                 participantDrum.classList.add('result-highlight');
@@ -172,7 +179,7 @@ function nextRound() {
             }
             
             // Прибрати підсвічування через налаштований час
-            setTimeout(() => {
+            activeResultHighlightTimeout = setTimeout(() => {
                 if (participantDrum) {
                     participantDrum.classList.remove('result-highlight');
                     // Прибрати підсвічування з барабану
@@ -187,7 +194,7 @@ function nextRound() {
                 }
 
                 // Показати popup з привітанням переможця після завершення всіх анімацій
-                showWinnerPopup(winner.name, winner.division, wonPrize);
+                showWinnerPopup(winner.name, winner.position, winner.division, wonPrize);
 
             }, animationSettings.resultHighlightDuration * 1000);
             
@@ -198,6 +205,7 @@ function nextRound() {
         results.push({
             round: window.DataManager.currentRound,
             winner: winner.name,
+            winnerPosition: winner.position,
             winnerDivision: winner.division,
             prize: wonPrize
         });
@@ -213,6 +221,7 @@ function nextRound() {
         // Оновити статистику
         if (typeof updateRaffleStats === 'function') updateRaffleStats();
         window.DataManager.markAsChanged(); // Зберегти поточний стан
+        activeSpinTimeout = null;
 
     }, animationSettings.spinDuration * 1000);
 
@@ -297,6 +306,48 @@ function resetRaffle() {
         return;
     }
 
+    // Зупинити всі активні таймери та інтервали анімації
+    if (activeSpinInterval) {
+        clearInterval(activeSpinInterval);
+        activeSpinInterval = null;
+    }
+    if (activeSpinTimeout) {
+        clearTimeout(activeSpinTimeout);
+        activeSpinTimeout = null;
+    }
+    if (activeHighlightTimeout) {
+        clearTimeout(activeHighlightTimeout);
+        activeHighlightTimeout = null;
+    }
+    if (activeResultHighlightTimeout) {
+        clearTimeout(activeResultHighlightTimeout);
+        activeResultHighlightTimeout = null;
+    }
+
+    // Зупинити звук обертання
+    if (window.SoundManager) {
+        window.SoundManager.stopSpinSound();
+    }
+
+    // Прибрати CSS-класи анімації з барабанів
+    const participantDrumEl = document.getElementById('participant-drum');
+    const prizeDrumEl = document.getElementById('prize-drum');
+    if (participantDrumEl) {
+        participantDrumEl.classList.remove('spinning', 'slowing-down', 'result-highlight');
+        participantDrumEl.style.animationDuration = '';
+        const container = participantDrumEl.closest('.drum');
+        if (container) container.classList.remove('result-highlight');
+    }
+    if (prizeDrumEl) {
+        prizeDrumEl.classList.remove('spinning', 'slowing-down', 'result-highlight');
+        prizeDrumEl.style.animationDuration = '';
+        const container = prizeDrumEl.closest('.drum');
+        if (container) container.classList.remove('result-highlight');
+    }
+
+    // Сховати popup переможця якщо відкритий
+    hideWinnerPopup();
+
     // createBackup() видалено - автозбереження достатньо для захисту даних
 
     window.DataManager.currentRound = 0;
@@ -328,7 +379,7 @@ function resetRaffle() {
 let popupCountdownInterval = null;
 let popupAutoCloseTimeout = null;
 
-function showWinnerPopup(winnerName, winnerDivision, prizeName) {
+function showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName) {
     // Перевірити чи увімкнено показ привітання переможця
     if (!animationSettings.showWinnerCelebration) {
         // Якщо привітання відключено, одразу показати кнопку наступного раунду або завершити розіграш
@@ -352,12 +403,17 @@ function showWinnerPopup(winnerName, winnerDivision, prizeName) {
     
     const popupContent = popup.querySelector('.popup-content');
     const winnerNameEl = document.getElementById('winner-name');
+    const winnerPositionEl = document.getElementById('winner-position');
     const winnerDivisionEl = document.getElementById('winner-division');
     const winnerPrizeEl = document.getElementById('winner-prize');
     const countdownTimer = document.getElementById('countdown-timer');
     
     // Оновити інформацію про переможця
     if (winnerNameEl) winnerNameEl.textContent = winnerName;
+    if (winnerPositionEl) {
+        winnerPositionEl.textContent = winnerPosition || '';
+        winnerPositionEl.style.display = winnerPosition ? '' : 'none';
+    }
     if (winnerDivisionEl) winnerDivisionEl.textContent = winnerDivision || 'Не вказано';
     if (winnerPrizeEl) winnerPrizeEl.textContent = prizeName;
     

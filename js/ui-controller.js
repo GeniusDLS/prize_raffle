@@ -23,16 +23,16 @@ function escapeHtml(str) {
 
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('tab-active'));
     
     const page = document.getElementById(pageId + '-page');
     if (page) page.classList.add('active');
     
-    // Знайти відповідну вкладку і зробити її активною
+    // Знайти відповідну вкладку і зробити її активною (DaisyUI tab-active)
     const tabs = document.querySelectorAll('.nav-tab');
     tabs.forEach(tab => {
         if (tab.textContent.toLowerCase().includes(getPageName(pageId))) {
-            tab.classList.add('active');
+            tab.classList.add('tab-active');
         }
     });
     
@@ -138,6 +138,7 @@ function updateParticipantsList() {
         if (index === editingParticipantIndex) {
             row.innerHTML = `
                 <td><input class="inline-edit" type="text" id="edit-p-name" value="${escapeHtml(participant.name)}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
+                <td><input class="inline-edit" type="text" id="edit-p-position" value="${escapeHtml(participant.position || '')}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
                 <td><input class="inline-edit" type="text" id="edit-p-division" value="${escapeHtml(participant.division || '')}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
                 <td><input class="inline-edit inline-edit-number" type="number" id="edit-p-weight" value="${participant.weight}" min="1" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
                 <td>
@@ -148,6 +149,7 @@ function updateParticipantsList() {
         } else {
             row.innerHTML = `
                 <td>${escapeHtml(participant.name)}</td>
+                <td>${escapeHtml(participant.position) || '—'}</td>
                 <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
                 <td>${escapeHtml(participant.weight)}</td>
                 <td>
@@ -170,10 +172,11 @@ function startEditParticipant(index) {
 
 function saveEditParticipant(index) {
     const name = document.getElementById('edit-p-name')?.value ?? '';
+    const position = document.getElementById('edit-p-position')?.value ?? '';
     const division = document.getElementById('edit-p-division')?.value ?? '';
     const weight = document.getElementById('edit-p-weight')?.value ?? '1';
     editingParticipantIndex = -1;
-    const saved = window.DataManager.updateParticipant(index, name, division, weight);
+    const saved = window.DataManager.updateParticipant(index, name, position, division, weight);
     if (!saved) {
         // Повернути у режим редагування при помилці валідації
         editingParticipantIndex = index;
@@ -301,7 +304,7 @@ function updateResultsDisplay() {
     resultsList.innerHTML = results.map(result => `
         <div class="result-item">
             <span class="round-indicator">Раунд ${result.round}</span>
-            <strong>${escapeHtml(result.winner)}</strong>${result.winnerDivision ? ` (Підрозділ: ${escapeHtml(result.winnerDivision)})` : ''} виграв <strong>${escapeHtml(result.prize)}</strong>
+            <strong>${escapeHtml(result.winner)}</strong>${result.winnerPosition ? ` — ${escapeHtml(result.winnerPosition)}` : ''}${result.winnerDivision ? ` (Підрозділ: ${escapeHtml(result.winnerDivision)})` : ''} виграв <strong>${escapeHtml(result.prize)}</strong>
         </div>
     `).join('');
 }
@@ -311,11 +314,18 @@ function updateResultsDisplay() {
 function setupFormHandlers() {
     // Обробка Enter для форм учасників
     const participantName = document.getElementById('participant-name');
+    const participantPosition = document.getElementById('participant-position');
     const participantDivision = document.getElementById('participant-division');
     const participantWeight = document.getElementById('participant-weight');
     
     if (participantName) {
         participantName.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') window.DataManager.addParticipant();
+        });
+    }
+    
+    if (participantPosition) {
+        participantPosition.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') window.DataManager.addParticipant();
         });
     }
@@ -366,8 +376,8 @@ function setupNavigation() {
                 pageId = 'raffle';
             } else if (tabText.includes('результат')) {
                 pageId = 'results';
-            } else if (tabText.includes('тест')) {
-                pageId = 'tests';
+            } else if (tabText.includes('налаштування')) {
+                pageId = 'settings';
             } else if (tabText.includes('дані')) {
                 pageId = 'data';
             }
@@ -532,16 +542,21 @@ function hideSettings() {
 }
 
 function showSettingsTab(tabId) {
-    // Переключення вкладок всередині налаштувань
-    document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('active'));
+    // Переключення вкладок всередині налаштувань (DaisyUI tab-active)
+    document.querySelectorAll('.settings-tab').forEach(tab => tab.classList.remove('tab-active'));
     document.querySelectorAll('.settings-content').forEach(content => content.classList.remove('active'));
     
-    // Активувати потрібну вкладку
-    const targetTab = document.querySelector(`[onclick="showSettingsTab('${tabId}')"]`);
+    // Активувати потрібну вкладку за data-tab-id атрибутом
+    const targetTab = document.querySelector(`.settings-tab[data-tab-id="${tabId}"]`);
     const targetContent = document.getElementById(`${tabId}-settings`);
     
-    if (targetTab) targetTab.classList.add('active');
+    if (targetTab) targetTab.classList.add('tab-active');
     if (targetContent) targetContent.classList.add('active');
+    
+    // Автоматично рендерити пікер при переключенні на вкладку теми
+    if (tabId === 'theme' && typeof renderThemePicker === 'function') {
+        renderThemePicker();
+    }
 }
 
 // ===== ФУНКЦІЇ ПІДЗАКЛАДОК ДАНИХ =====
@@ -552,9 +567,9 @@ function showDataTab(tabName) {
         content.classList.remove('active');
     });
     
-    // Деактивувати всі кнопки підзакладок даних
+    // Деактивувати всі кнопки підзакладок даних (DaisyUI tab-active)
     document.querySelectorAll('.data-tab').forEach(tab => {
-        tab.classList.remove('active');
+        tab.classList.remove('tab-active');
     });
     
     // Показати вибрану підзакладку
@@ -563,10 +578,10 @@ function showDataTab(tabName) {
         targetContent.classList.add('active');
     }
     
-    // Активувати відповідну кнопку
-    const targetTab = document.querySelector(`[onclick="showDataTab('${tabName}')"]`);
+    // Активувати відповідну кнопку за data-tab-id атрибутом
+    const targetTab = document.querySelector(`.data-tab[data-tab-id="${tabName}"]`);
     if (targetTab) {
-        targetTab.classList.add('active');
+        targetTab.classList.add('tab-active');
     }
     
     // Зберегти активну підзакладку даних
@@ -598,6 +613,112 @@ function setupDataTabs() {
 
 // ===== УТИЛІТАРНІ ФУНКЦІЇ =====
 // Утилітарні функції видалено як невикористовувані
+
+// ===== ФУНКЦІЇ УПРАВЛІННЯ ТЕМАМИ (DaisyUI v5) =====
+
+// Повний список вбудованих тем DaisyUI v5
+const DAISY_THEMES = [
+    { id: 'light',        name: 'Light',        emoji: '☀️' },
+    { id: 'dark',         name: 'Dark',         emoji: '🌙' },
+    { id: 'midnight',     name: 'Midnight',     emoji: '🌌' },
+    { id: 'forest',       name: 'Forest',       emoji: '🌿' },
+    { id: 'emerald',      name: 'Emerald',      emoji: '💎' },
+    { id: 'garden',       name: 'Garden',       emoji: '🌸' },
+    { id: 'aqua',         name: 'Aqua',         emoji: '🌊' },
+    { id: 'cupcake',      name: 'Cupcake',      emoji: '🧁' },
+    { id: 'bumblebee',    name: 'Bumblebee',    emoji: '🐝' },
+    { id: 'lemonade',     name: 'Lemonade',     emoji: '🍋' },
+    { id: 'pastel',       name: 'Pastel',       emoji: '🎨' },
+    { id: 'fantasy',      name: 'Fantasy',      emoji: '✨' },
+    { id: 'winter',       name: 'Winter',       emoji: '❄️' },
+    { id: 'nord',         name: 'Nord',         emoji: '🏔️' },
+    { id: 'silk',         name: 'Silk',         emoji: '🌷' },
+    { id: 'caramellatte', name: 'Caramellatte', emoji: '🍮' },
+    { id: 'corporate',    name: 'Corporate',    emoji: '🏢' },
+    { id: 'retro',        name: 'Retro',        emoji: '📺' },
+    { id: 'lofi',         name: 'Lo-Fi',        emoji: '🎵' },
+    { id: 'cmyk',         name: 'CMYK',         emoji: '🖨️' },
+    { id: 'synthwave',    name: 'Synthwave',    emoji: '🎹' },
+    { id: 'cyberpunk',    name: 'Cyberpunk',    emoji: '🤖' },
+    { id: 'dracula',      name: 'Dracula',      emoji: '🧛' },
+    { id: 'night',        name: 'Night',        emoji: '🌃' },
+    { id: 'dim',          name: 'Dim',          emoji: '🌫️' },
+    { id: 'abyss',        name: 'Abyss',        emoji: '🌌' },
+    { id: 'luxury',       name: 'Luxury',       emoji: '👑' },
+    { id: 'black',        name: 'Black',        emoji: '⬛' },
+    { id: 'coffee',       name: 'Coffee',       emoji: '☕' },
+    { id: 'halloween',    name: 'Halloween',    emoji: '🎃' },
+    { id: 'valentine',    name: 'Valentine',    emoji: '❤️' },
+    { id: 'sunset',       name: 'Sunset',       emoji: '🌅' },
+    { id: 'autumn',       name: 'Autumn',       emoji: '🍂' },
+];
+
+/**
+ * Застосовує DaisyUI тему до сторінки та зберігає вибір у localStorage
+ */
+function applyTheme(themeId) {
+    document.documentElement.setAttribute('data-theme', themeId);
+
+    try {
+        localStorage.setItem(window.DataManager.STORAGE_KEYS.THEME, themeId);
+    } catch (error) {
+        window.Logger.error('[UIController]', 'Помилка збереження теми:', error);
+    }
+
+    // Оновити стан карток пікера (якщо він відкритий)
+    document.querySelectorAll('.theme-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.themeId === themeId);
+    });
+
+    window.Logger.log('[UIController]', 'Застосовано тему:', themeId);
+}
+
+/**
+ * Завантажує збережену тему з localStorage та застосовує її
+ */
+function loadSavedTheme() {
+    try {
+        const saved = localStorage.getItem(window.DataManager.STORAGE_KEYS.THEME) || 'forest';
+        document.documentElement.setAttribute('data-theme', saved);
+        window.Logger.log('[UIController]', 'Завантажено тему:', saved);
+    } catch (error) {
+        window.Logger.error('[UIController]', 'Помилка завантаження теми:', error);
+        document.documentElement.setAttribute('data-theme', 'forest');
+    }
+}
+
+/**
+ * Рендерить картки DaisyUI тем у контейнер #theme-picker-grid.
+ * Кожна картка скопована в контекст своєї теми (data-theme), тому
+ * кольори прев'ю відповідають реальним primary/secondary/accent кольорам теми.
+ */
+function renderThemePicker() {
+    const grid = document.getElementById('theme-picker-grid');
+    if (!grid) { return; }
+
+    let currentTheme = 'forest';
+    try {
+        currentTheme = localStorage.getItem(window.DataManager.STORAGE_KEYS.THEME) || 'forest';
+    } catch (e) { /* ігнорувати */ }
+
+    grid.innerHTML = DAISY_THEMES.map(theme => {
+        const isSelected = theme.id === currentTheme;
+        // data-theme на картці скопує DaisyUI тему в контекст цього елемента —
+        // тому var(--color-primary) і т.д. будуть кольорами саме цієї теми
+        return `<div class="theme-card${isSelected ? ' selected' : ''}"
+                     data-theme="${theme.id}"
+                     data-theme-id="${theme.id}"
+                     onclick="applyTheme('${theme.id}')">
+            <div class="theme-card-preview">
+                <span class="theme-dot" style="background-color: var(--color-primary);"></span>
+                <span class="theme-dot" style="background-color: var(--color-secondary);"></span>
+                <span class="theme-dot" style="background-color: var(--color-accent);"></span>
+                <span class="theme-dot" style="background-color: var(--color-neutral);"></span>
+            </div>
+            <div class="theme-card-name">${theme.emoji} ${theme.name}</div>
+        </div>`;
+    }).join('');
+}
 
 // ===== ЕКСПОРТ ФУНКЦІЙ ДЛЯ ГЛОБАЛЬНОГО ДОСТУПУ =====
 
@@ -647,6 +768,11 @@ window.UIController = {
     loadActiveDataTab,
     setupDataTabs,
     
+    // Теми
+    applyTheme,
+    loadSavedTheme,
+    renderThemePicker,
+    
     // Ініціалізація
     initializeUI,
 
@@ -672,6 +798,7 @@ window.updateParticipantsList = updateParticipantsList;
 window.updatePrizesList = updatePrizesList;
 window.updateResultsDisplay = updateResultsDisplay;
 window.updateSortButtonsState = updateSortButtonsState;
+window.applyTheme = applyTheme;
 
 // Глобальні функції для сортування та перемішування (для HTML onclick)
 window.sortParticipants = window.DataManager.sortParticipants;

@@ -48,7 +48,8 @@ const STORAGE_KEYS = {
     LAST_SAVE: 'raffle_last_save',
     ANIMATION_SETTINGS: 'raffle_animation_settings',
     ACTIVE_TAB: 'raffle_active_tab',
-    PARTICIPANTS_SORT: 'raffle_participants_sort'
+    PARTICIPANTS_SORT: 'raffle_participants_sort',
+    THEME: 'raffle_theme'
     // BACKUP видалено - немає функції відновлення, автозбереження достатньо
 };
 
@@ -321,6 +322,7 @@ function markAsChanged() {
 
 function addParticipant() {
     const name = document.getElementById('participant-name').value.trim();
+    const position = document.getElementById('participant-position').value.trim();
     const division = document.getElementById('participant-division').value.trim();
     const weight = parseInt(document.getElementById('participant-weight').value);
     const errorDiv = document.getElementById('participants-error');
@@ -347,14 +349,16 @@ function addParticipant() {
         return;
     }
 
-    participants.push({ name, division, weight });
+    participants.push({ name, position, division, weight });
     
     // Очистити форму
     const nameInput = document.getElementById('participant-name');
+    const positionInput = document.getElementById('participant-position');
     const divisionInput = document.getElementById('participant-division');
     const weightInput = document.getElementById('participant-weight');
     
     if (nameInput) nameInput.value = '';
+    if (positionInput) positionInput.value = '';
     if (divisionInput) divisionInput.value = '';
     if (weightInput) weightInput.value = '1';
     
@@ -380,13 +384,14 @@ function removeParticipant(index) {
     }
 }
 
-function updateParticipant(index, name, division, weight) {
+function updateParticipant(index, name, position, division, weight) {
     if (index < 0 || index >= participants.length) {
         window.Logger.error('[DataManager]', `updateParticipant: невірний індекс ${index}`);
         return false;
     }
 
     name = String(name || '').trim();
+    position = String(position || '').trim();
     division = String(division || '').trim();
     weight = parseInt(weight) || 1;
 
@@ -411,7 +416,7 @@ function updateParticipant(index, name, division, weight) {
         return false;
     }
 
-    participants[index] = { ...participants[index], name, division, weight };
+    participants[index] = { ...participants[index], name, position, division, weight };
     if (typeof updateDisplay === 'function') updateDisplay();
     if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
     markAsChanged();
@@ -732,6 +737,7 @@ function handleExcelLoad(event) {
                     
                     // Знайти рядок з заголовками або почати з першого рядка
                     let startRow = 0;
+                    let colName = 0, colPosition = -1, colDivision = 1, colWeight = 2;
                     for (let i = 0; i < participantsData.length; i++) {
                         const row = participantsData[i];
                         if (row && row.length >= 3) {
@@ -739,10 +745,15 @@ function handleExcelLoad(event) {
                             const second = row[1] ? row[1].toString().toLowerCase() : '';
                             const third = row[2] ? row[2].toString().toLowerCase() : '';
                             
-                            if ((first.includes('ім') || first.includes('name')) && 
-                                (second.includes('підрозділ') || second.includes('division') || second.includes('відділ')) && 
-                                (third.includes('ваг') || third.includes('weight') || third.includes('пріоритет'))) {
+                            if (first.includes('ім') || first.includes('name')) {
                                 startRow = i + 1;
+                                // Визначити колонки з заголовка
+                                for (let c = 1; c < row.length; c++) {
+                                    const cell = row[c] ? row[c].toString().toLowerCase() : '';
+                                    if (cell.includes('посад') || cell.includes('position')) { colPosition = c; }
+                                    else if (cell.includes('підрозд') || cell.includes('division') || cell.includes('відділ')) { colDivision = c; }
+                                    else if (cell.includes('ваг') || cell.includes('weight') || cell.includes('пріоритет')) { colWeight = c; }
+                                }
                                 break;
                             }
                         }
@@ -753,12 +764,13 @@ function handleExcelLoad(event) {
                         const row = participantsData[i];
                         if (!row || row.length < 2) continue;
                         
-                        const name = row[0] ? row[0].toString().trim() : '';
-                        const division = row[1] ? row[1].toString().trim() : '';
-                        const weight = row.length > 2 ? (parseInt(row[2]) || 1) : 1;
+                        const name = row[colName] ? row[colName].toString().trim() : '';
+                        const position = (colPosition >= 0 && row[colPosition]) ? row[colPosition].toString().trim() : '';
+                        const division = row[colDivision] ? row[colDivision].toString().trim() : '';
+                        const weight = (colWeight >= 0 && row[colWeight]) ? (parseInt(row[colWeight]) || 1) : 1;
                         
                         if (name) {
-                            participants.push({ name, division, weight });
+                            participants.push({ name, position, division, weight });
                             participantsLoaded++;
                         }
                     }
@@ -858,12 +870,13 @@ function handleExcelLoad(event) {
                         // Якщо дійшли до секції призів, зупинитися
                         if (i >= prizesStartRow && prizesStartRow > participantsStartRow) break;
                         
-                        const name = row[0] ? row[0].toString().trim() : '';
-                        const division = row[1] ? row[1].toString().trim() : '';
-                        const weight = parseInt(row[2]) || 1;
+                        const name = row[colName] ? row[colName].toString().trim() : '';
+                        const position = (colPosition >= 0 && row[colPosition]) ? row[colPosition].toString().trim() : '';
+                        const division = row[colDivision] ? row[colDivision].toString().trim() : '';
+                        const weight = (colWeight >= 0 && row[colWeight]) ? (parseInt(row[colWeight]) || 1) : 1;
                         
                         if (name && division && weight > 0) {
-                            participants.push({ name, division, weight });
+                            participants.push({ name, position, division, weight });
                             participantsLoaded++;
                         }
                     }
@@ -944,9 +957,9 @@ function exportToExcel() {
 
     // Створити лист для учасників
     const participantsData = [];
-    participantsData.push(['Ім\'я', 'Підрозділ', 'Вага']);
+    participantsData.push(['Ім\'я', 'Посада', 'Підрозділ', 'Вага']);
     participants.forEach(p => {
-        participantsData.push([p.name, p.division || 'Не вказано', p.weight]);
+        participantsData.push([p.name, p.position || '', p.division || 'Не вказано', p.weight]);
     });
     
     // Створити лист для призів
@@ -983,10 +996,10 @@ function exportResultsToExcel() {
     wsResults.push(['РЕЗУЛЬТАТИ РОЗІГРАШУ']);
     wsResults.push(['Дата:', new Date().toLocaleDateString('uk-UA')]);
     wsResults.push([]);
-    wsResults.push(['Раунд', 'Переможець', 'Підрозділ', 'Приз']);
+    wsResults.push(['Раунд', 'Переможець', 'Посада', 'Підрозділ', 'Приз']);
     
     results.forEach(result => {
-        wsResults.push([result.round, result.winner, result.winnerDivision || 'Не вказано', result.prize]);
+        wsResults.push([result.round, result.winner, result.winnerPosition || '', result.winnerDivision || 'Не вказано', result.prize]);
     });
 
     const ws1 = XLSX.utils.aoa_to_sheet(wsResults);
@@ -1042,16 +1055,16 @@ const TEST_DATA_PRESETS = {
         label: '🏢 Корпоратив',
         description: '10 співробітників з різних відділів, 5 призів',
         participants: [
-            { name: 'Олексій Мороз',     division: 'Відділ розробки',   weight: 1 },
-            { name: 'Марина Коваль',     division: 'Відділ маркетингу', weight: 1 },
-            { name: 'Дмитро Савченко',   division: 'Відділ розробки',   weight: 2 },
-            { name: 'Ірина Бондар',      division: 'HR відділ',         weight: 1 },
-            { name: 'Сергій Левченко',   division: 'Фінансовий відділ', weight: 1 },
-            { name: 'Тетяна Мельник',    division: 'Відділ продажів',   weight: 1 },
-            { name: 'Василь Ткаченко',   division: 'IT підтримка',      weight: 1 },
-            { name: 'Наталія Шевченко',  division: 'Відділ маркетингу', weight: 2 },
-            { name: 'Андрій Кравченко',  division: 'Відділ продажів',   weight: 1 },
-            { name: 'Оксана Лисенко',    division: 'HR відділ',         weight: 1 },
+            { name: 'Олексій Мороз',     position: 'Розробник',       division: 'Відділ розробки',   weight: 1 },
+            { name: 'Марина Коваль',     position: 'Менеджер',        division: 'Відділ маркетингу', weight: 1 },
+            { name: 'Дмитро Савченко',   position: 'Техлід',          division: 'Відділ розробки',   weight: 2 },
+            { name: 'Ірина Бондар',      position: 'Менеджер',        division: 'HR відділ',         weight: 1 },
+            { name: 'Сергій Левченко',   position: 'Аналітик',       division: 'Фінансовий відділ', weight: 1 },
+            { name: 'Тетяна Мельник',    position: 'Менеджер',        division: 'Відділ продажів',   weight: 1 },
+            { name: 'Василь Ткаченко',   position: 'Адміністратор',   division: 'IT підтримка',      weight: 1 },
+            { name: 'Наталія Шевченко',  position: 'Лід маркетингу', division: 'Відділ маркетингу', weight: 2 },
+            { name: 'Андрій Кравченко',  position: 'Менеджер',        division: 'Відділ продажів',   weight: 1 },
+            { name: 'Оксана Лисенко',    position: 'Спеціаліст',      division: 'HR відділ',         weight: 1 },
         ],
         prizes: [
             { name: 'Сертифікат на відпустку',  count: 1 },
@@ -1065,18 +1078,18 @@ const TEST_DATA_PRESETS = {
         label: '💻 IT-команда',
         description: '12 IT-спеціалістів, 4 технічних призи',
         participants: [
-            { name: 'Max Petrenko',     division: 'Frontend',  weight: 1 },
-            { name: 'Anna Sydorenko',   division: 'Backend',   weight: 1 },
-            { name: 'Ivan Kovalenko',   division: 'DevOps',    weight: 2 },
-            { name: 'Olga Bondarenko',  division: 'QA',        weight: 1 },
-            { name: 'Vlad Tkachenko',   division: 'Frontend',  weight: 1 },
-            { name: 'Kate Marchenko',   division: 'Design',    weight: 1 },
-            { name: 'Yuri Savchenko',   division: 'Backend',   weight: 2 },
-            { name: 'Lena Lysenko',     division: 'QA',        weight: 1 },
-            { name: 'Dmytro Moroz',     division: 'DevOps',    weight: 1 },
-            { name: 'Sofia Levchenko',  division: 'Design',    weight: 1 },
-            { name: 'Andriy Ilchenko',  division: 'Backend',   weight: 1 },
-            { name: 'Natalia Boyko',    division: 'Frontend',  weight: 1 },
+            { name: 'Max Petrenko',     position: 'Developer',  division: 'Frontend',  weight: 1 },
+            { name: 'Anna Sydorenko',   position: 'Developer',  division: 'Backend',   weight: 1 },
+            { name: 'Ivan Kovalenko',   position: 'DevOps Eng', division: 'DevOps',    weight: 2 },
+            { name: 'Olga Bondarenko',  position: 'QA Eng',     division: 'QA',        weight: 1 },
+            { name: 'Vlad Tkachenko',   position: 'Developer',  division: 'Frontend',  weight: 1 },
+            { name: 'Kate Marchenko',   position: 'Designer',   division: 'Design',    weight: 1 },
+            { name: 'Yuri Savchenko',   position: 'Tech Lead',  division: 'Backend',   weight: 2 },
+            { name: 'Lena Lysenko',     position: 'QA Eng',     division: 'QA',        weight: 1 },
+            { name: 'Dmytro Moroz',     position: 'DevOps Eng', division: 'DevOps',    weight: 1 },
+            { name: 'Sofia Levchenko',  position: 'Designer',   division: 'Design',    weight: 1 },
+            { name: 'Andriy Ilchenko',  position: 'Developer',  division: 'Backend',   weight: 1 },
+            { name: 'Natalia Boyko',    position: 'Developer',  division: 'Frontend',  weight: 1 },
         ],
         prizes: [
             { name: 'Механічна клавіатура',   count: 1 },
@@ -1089,21 +1102,21 @@ const TEST_DATA_PRESETS = {
         label: '🎓 Шкільний захід',
         description: '15 учнів з різних класів, 5 призів',
         participants: [
-            { name: 'Петренко Олег',    division: '9-А клас',  weight: 1 },
-            { name: 'Коваль Софія',     division: '10-Б клас', weight: 1 },
-            { name: 'Мороз Артем',      division: '11-А клас', weight: 1 },
-            { name: 'Бондар Аліна',     division: '9-Б клас',  weight: 1 },
-            { name: 'Савченко Максим',  division: '10-А клас', weight: 2 },
-            { name: 'Ткач Вікторія',    division: '8-А клас',  weight: 1 },
-            { name: 'Лисенко Кирило',   division: '9-А клас',  weight: 1 },
-            { name: 'Шевченко Діана',   division: '11-Б клас', weight: 1 },
-            { name: 'Мельник Богдан',   division: '10-А клас', weight: 1 },
-            { name: 'Кравченко Юлія',   division: '8-Б клас',  weight: 2 },
-            { name: 'Levchenko Dima',   division: '9-Б клас',  weight: 1 },
-            { name: 'Марченко Злата',   division: '10-Б клас', weight: 1 },
-            { name: 'Бойко Назар',      division: '11-А клас', weight: 1 },
-            { name: 'Іваненко Поліна',  division: '8-А клас',  weight: 1 },
-            { name: 'Гриценко Владислав', division: '9-А клас', weight: 1 },
+            { name: 'Петренко Олег',    position: 'Учень',  division: '9-А клас',  weight: 1 },
+            { name: 'Коваль Софія',     position: 'Учень',  division: '10-Б клас', weight: 1 },
+            { name: 'Мороз Артем',      position: 'Учень',  division: '11-А клас', weight: 1 },
+            { name: 'Бондар Аліна',     position: 'Учень',  division: '9-Б клас',  weight: 1 },
+            { name: 'Савченко Максим',  position: 'Староста',  division: '10-А клас', weight: 2 },
+            { name: 'Ткач Вікторія',    position: 'Учень',  division: '8-А клас',  weight: 1 },
+            { name: 'Лисенко Кирило',   position: 'Учень',  division: '9-А клас',  weight: 1 },
+            { name: 'Шевченко Діана',   position: 'Учень',  division: '11-Б клас', weight: 1 },
+            { name: 'Мельник Богдан',   position: 'Учень',  division: '10-А клас', weight: 1 },
+            { name: 'Кравченко Юлія',   position: 'Староста',  division: '8-Б клас',  weight: 2 },
+            { name: 'Levchenko Dima',   position: 'Student',  division: '9-Б клас',  weight: 1 },
+            { name: 'Марченко Злата',   position: 'Учень',  division: '10-Б клас', weight: 1 },
+            { name: 'Бойко Назар',      position: 'Учень',  division: '11-А клас', weight: 1 },
+            { name: 'Іваненко Поліна',  position: 'Учень',  division: '8-А клас',  weight: 1 },
+            { name: 'Гриценко Владислав', position: 'Староста',  division: '9-А клас',  weight: 1 },
         ],
         prizes: [
             { name: '🥇 Головний приз — планшет', count: 1 },
@@ -1117,11 +1130,11 @@ const TEST_DATA_PRESETS = {
         label: '🔬 Малий тест',
         description: '5 учасників, 3 призи — швидка перевірка',
         participants: [
-            { name: 'Учасник Альфа',  division: 'Команда А', weight: 1 },
-            { name: 'Учасник Бета',   division: 'Команда Б', weight: 2 },
-            { name: 'Учасник Гамма',  division: 'Команда А', weight: 1 },
-            { name: 'Учасник Дельта', division: 'Команда Б', weight: 1 },
-            { name: 'Учасник Епсилон', division: 'Команда В', weight: 3 },
+            { name: 'Учасник Альфа',  position: 'Позиція 1', division: 'Команда А', weight: 1 },
+            { name: 'Учасник Бета',   position: 'Позиція 2', division: 'Команда Б', weight: 2 },
+            { name: 'Учасник Гамма',  position: 'Позиція 1', division: 'Команда А', weight: 1 },
+            { name: 'Учасник Дельта', position: 'Позиція 2', division: 'Команда Б', weight: 1 },
+            { name: 'Учасник Епсилон', position: 'Позиція 3', division: 'Команда В', weight: 3 },
         ],
         prizes: [
             { name: 'Перший приз',  count: 1 },
@@ -1133,31 +1146,31 @@ const TEST_DATA_PRESETS = {
         label: '🏟️ Великий тест',
         description: '25 учасників, 8 різних призів',
         participants: [
-            { name: 'Андрієнко Роман',   division: 'Відділ 1', weight: 1 },
-            { name: 'Бойченко Ірина',    division: 'Відділ 2', weight: 1 },
-            { name: 'Василенко Павло',   division: 'Відділ 1', weight: 2 },
-            { name: 'Гончаренко Ольга',  division: 'Відділ 3', weight: 1 },
-            { name: 'Даниленко Федір',   division: 'Відділ 2', weight: 1 },
-            { name: 'Євтушенко Ганна',   division: 'Відділ 4', weight: 1 },
-            { name: 'Єрьоменко Тарас',   division: 'Відділ 1', weight: 2 },
-            { name: 'Жайворон Людмила',  division: 'Відділ 3', weight: 1 },
-            { name: 'Захаренко Михайло', division: 'Відділ 2', weight: 1 },
-            { name: 'Іванченко Лариса',  division: 'Відділ 4', weight: 1 },
-            { name: 'Карпенко Василь',   division: 'Відділ 1', weight: 1 },
-            { name: 'Коваленко Зінаїда', division: 'Відділ 3', weight: 2 },
-            { name: 'Лисиця Олег',       division: 'Відділ 2', weight: 1 },
-            { name: 'Мазуренко Дарина',  division: 'Відділ 4', weight: 1 },
-            { name: 'Науменко Богдан',   division: 'Відділ 1', weight: 1 },
-            { name: 'Олексієнко Тамара', division: 'Відділ 3', weight: 1 },
-            { name: 'Павленко Анатолій', division: 'Відділ 2', weight: 2 },
-            { name: 'Різниченко Катерина', division: 'Відділ 4', weight: 1 },
-            { name: 'Семененко Юрій',    division: 'Відділ 1', weight: 1 },
-            { name: 'Тимченко Валентина', division: 'Відділ 3', weight: 1 },
-            { name: 'Удовиченко Степан', division: 'Відділ 2', weight: 1 },
-            { name: 'Харченко Надія',    division: 'Відділ 4', weight: 2 },
-            { name: 'Цушко Антон',       division: 'Відділ 1', weight: 1 },
-            { name: 'Шаповаленко Вера',  division: 'Відділ 3', weight: 1 },
-            { name: 'Щербаченко Іван',   division: 'Відділ 2', weight: 1 },
+            { name: 'Андрієнко Роман',   position: 'Спеціаліст', division: 'Відділ 1', weight: 1 },
+            { name: 'Бойченко Ірина',    position: 'Аналітик',   division: 'Відділ 2', weight: 1 },
+            { name: 'Василенко Павло',   position: 'Тімлід',     division: 'Відділ 1', weight: 2 },
+            { name: 'Гончаренко Ольга',  position: 'Спеціаліст', division: 'Відділ 3', weight: 1 },
+            { name: 'Даниленко Федір',   position: 'Менеджер',   division: 'Відділ 2', weight: 1 },
+            { name: 'Євтушенко Ганна',   position: 'Спеціаліст', division: 'Відділ 4', weight: 1 },
+            { name: 'Єрьоменко Тарас',   position: 'Тімлід',     division: 'Відділ 1', weight: 2 },
+            { name: 'Жайворон Людмила',  position: 'Спеціаліст', division: 'Відділ 3', weight: 1 },
+            { name: 'Захаренко Михайло', position: 'Аналітик',   division: 'Відділ 2', weight: 1 },
+            { name: 'Іванченко Лариса',  position: 'Менеджер',   division: 'Відділ 4', weight: 1 },
+            { name: 'Карпенко Василь',   position: 'Спеціаліст', division: 'Відділ 1', weight: 1 },
+            { name: 'Коваленко Зінаїда', position: 'Тімлід',     division: 'Відділ 3', weight: 2 },
+            { name: 'Лисиця Олег',       position: 'Спеціаліст', division: 'Відділ 2', weight: 1 },
+            { name: 'Мазуренко Дарина',  position: 'Аналітик',   division: 'Відділ 4', weight: 1 },
+            { name: 'Науменко Богдан',   position: 'Спеціаліст', division: 'Відділ 1', weight: 1 },
+            { name: 'Олексієнко Тамара', position: 'Менеджер',   division: 'Відділ 3', weight: 1 },
+            { name: 'Павленко Анатолій', position: 'Тімлід',     division: 'Відділ 2', weight: 2 },
+            { name: 'Різниченко Катерина', position: 'Спеціаліст', division: 'Відділ 4', weight: 1 },
+            { name: 'Семененко Юрій',    position: 'Аналітик',   division: 'Відділ 1', weight: 1 },
+            { name: 'Тимченко Валентина', position: 'Спеціаліст', division: 'Відділ 3', weight: 1 },
+            { name: 'Удовиченко Степан', position: 'Менеджер',   division: 'Відділ 2', weight: 1 },
+            { name: 'Харченко Надія',    position: 'Тімлід',     division: 'Відділ 4', weight: 2 },
+            { name: 'Цушко Антон',       position: 'Спеціаліст', division: 'Відділ 1', weight: 1 },
+            { name: 'Шаповаленко Вера',  position: 'Аналітик',   division: 'Відділ 3', weight: 1 },
+            { name: 'Щербаченко Іван',   position: 'Спеціаліст', division: 'Відділ 2', weight: 1 },
         ],
         prizes: [
             { name: '🏆 Гран-прі',        count: 1 },
