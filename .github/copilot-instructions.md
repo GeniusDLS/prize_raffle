@@ -1,254 +1,63 @@
-# Інструкції для проекту Prize Raffle
+# Prize Raffle — Project Guidelines
 
-## Загальна інформація
-- **Назва проекту**: Prize Raffle (Розіграш призів)
-- **Опис**: Веб-додаток для проведення справедливих розіграшів з анімованими барабанами, тестами чесності та автоматичним збереженням стану
-- **Технології**: HTML5, CSS3, JavaScript ES6+, SheetJS (XLSX), localStorage API, Web Audio API
-- **Мова коментарів**: Українська
+## Architecture
 
-## Структура проекту
-- **Кореневий каталог**: `.` (поточний каталог)
-- **Основні файли**: `index.html`, `style.css`
-- **Основні підкаталоги**:
-  - `.github/` - інструкції Copilot (`copilot-instructions.md`)
-  - `js/` - модульна архітектура JavaScript
-  - `js/data-manager.js` - управління даними, збереження, Excel, сортування
-  - `js/raffle-engine.js` - логіка розіграшу, анімації, налаштування, `secureRandom()`
-  - `js/ui-controller.js` - інтерфейс, відображення, `escapeHtml()`
-  - `js/fairness-tests.js` - статистичні тести чесності генератора
-  - `js/sound-manager.js` - звукові ефекти (Web Audio API + Base64 fallback)
-  - `js/audio-data.js` - Base64 дані аудіофайлів
-  - `js/main.js` - ініціалізація та координація модулів
-  - `sounds/` - README для звукових файлів
+Vanilla HTML/CSS/JS — no build system, no package manager. Open `index.html` directly in a browser. CDN only for SheetJS (XLSX).
 
-## Робочий процес
-- **ВАЖЛИВО**: Перед внесенням будь-яких змін до файлів проекту, Claude повинен **узгоджувати ці зміни** зі мною
-- Для кожної пропонованої зміни потрібно:
-  1. Описати, які зміни плануються внести
-  2. Обґрунтувати необхідність цих змін
-  3. Вказати файли, які будуть змінені
-  4. Отримати моє підтвердження перед внесенням змін
+**Module load order in `index.html` is critical** — each module exports via `window.ModuleName`:
 
-## 🚨 КРИТИЧНО ВАЖЛИВО - ДОТРИМАННЯ ІНСТРУКЦІЙ
-- **ЗАБОРОНЕНО виконувати будь-які дії без явного узгодження**
-- **НЕ робити зайвих рухів** - працювати тільки в рамках поставленого завдання
-- **НЕ створювати тестові проекти, файли або скрипти** без прямого запиту
-- **НЕ запускати додатки або команди** без чіткого обґрунтування та дозволу
-- **ЧІТКО слідувати інструкціям** - якщо інструкції не передбачають щось, то цього робити НЕ потрібно
-- **ЗАВЖДИ спочатку питати, потім діяти** - якщо є сумніви щодо необхідності дії
-- **ФОКУСУВАТИСЯ на конкретному завданні** - не відволікатися на додаткові можливості
-
-### Принцип роботи: "Зроби тільки те, що потрібно"
-1. **Аналізуй завдання** - розумій точно, що потрібно зробити
-2. **Плануй мінімальні зміни** - тільки те, що необхідно для вирішення проблеми
-3. **Узгоджуй план** - перед будь-якими змінами
-4. **Виконуй тільки узгоджене** - без додаткових ініціатив
-5. **НЕ тестуй без запиту** - аналіз коду замість запуску програм
-
-## Модульна архітектура JavaScript
-
-### Принципи модульної організації
-- **Один модуль = одна відповідальність**
-- **Чіткий поділ функціональності між модулями**
-- **Мінімальні залежності між модулями**
-- **Експорт через window об'єкти для сумісності**
-
-### Структура модулів
 ```
-js/
-├── data-manager.js      # Управління даними, збереження, Excel, сортування
-├── audio-data.js        # Base64 дані аудіофайлів
-├── sound-manager.js     # Звукові ефекти (Web Audio API + Base64 fallback)
-├── raffle-engine.js     # Логіка розіграшу, анімації, secureRandom()
-├── ui-controller.js     # Інтерфейс, відображення, escapeHtml()
-├── fairness-tests.js    # Статистичні тести чесності
-└── main.js              # Ініціалізація та координація
+data-manager.js → audio-data.js → sound-manager.js → raffle-engine.js → ui-controller.js → fairness-tests.js → main.js
 ```
 
-### Порядок завантаження модулів
-```html
-<!-- Порядок КРИТИЧНО важливий! -->
-<script src="js/data-manager.js"></script>
-<script src="js/audio-data.js"></script>
-<script src="js/sound-manager.js"></script>
-<script src="js/raffle-engine.js"></script>
-<script src="js/ui-controller.js"></script>
-<script src="js/fairness-tests.js"></script>
-<script src="js/main.js"></script>
-```
-
-### Експорт модулів
-Кожен модуль експортує свої функції через window об'єкт:
-```javascript
+Module export pattern:
+```js
 window.ModuleName = {
-    // Публічні функції та змінні
-    publicFunction,
-    get publicVariable() { return privateVariable; },
-    set publicVariable(value) { privateVariable = value; }
+    publicFn,
+    get prop() { return _private; },
+    set prop(v) { _private = v; }
 };
 ```
 
-## Правила написання коду
-- **Стиль коду**: Власний стиль проекту з українськими коментарями
-- **Відступ**: 4 пробіли
-- **Максимальна довжина рядка**: 120 символів
-- **Фігурні дужки**: Для всіх блоків коду, навіть для однорядкових
-- **Сучасні функції**: використовувати ES6+ можливості (const/let, arrow functions, template literals)
+## Module Responsibilities
 
-## Найменування
-- **Функції та змінні**: camelCase (`addParticipant`, `isRaffleActive`)
-- **Константи**: UPPER_CASE (`STORAGE_KEYS`, `DEFAULT_ANIMATION_SETTINGS`)
-- **DOM елементи**: kebab-case в HTML, camelCase в JavaScript
-- **Модулі**: PascalCase (`DataManager`, `RaffleEngine`)
-- **Файли**: kebab-case (`data-manager.js`, `fairness-tests.js`)
-- **Використовувати змістовні та описові назви українською або англійською**
+| Module | Role |
+|--------|------|
+| `data-manager.js` | State (participants/prizes/results), localStorage, CRUD, Excel import, sorting, presets. Also defines `window.Logger` |
+| `audio-data.js` | Container for Base64 audio data (`AUDIO_BASE64_DATA`) |
+| `sound-manager.js` | Sound playback: Base64 files → Web Audio API synthesis as fallback |
+| `raffle-engine.js` | Raffle logic, drum animation, winner popup, animation settings |
+| `ui-controller.js` | DOM rendering of lists, navigation, inline editing, themes |
+| `fairness-tests.js` | RNG quality statistical tests (Runs Test + Chi-square) |
+| `main.js` | Init queue + `window.fn` wrappers for `onclick` compatibility |
 
-## Коментарі та документація
-- **Документація**: Блокові коментарі для модулів та основних функцій
-- **Мова коментарів**: Українська
-- **Уникати очевидних коментарів**
-- **Документувати складні алгоритми та бізнес-логіку**
-- **Використовувати розділювачі для структурування коду**
+## Non-obvious Conventions
 
-### Приклад документації модуля:
-```javascript
-/**
- * DATA MANAGER MODULE
- * Відповідає за управління даними, збереження та Excel операції
- */
+| Rule | Where enforced |
+|------|---------------|
+| **Random numbers** — use only `window.RaffleEngine.secureRandom()` | `raffle-engine.js` — do NOT add another source anywhere |
+| **XSS** — all user data inserted into `innerHTML` goes through `escapeHtml()` | `ui-controller.js` |
+| **localStorage** — always wrap in try-catch, use `STORAGE_KEYS` constants | `data-manager.js` |
+| **Code comments** — Ukrainian language only | all JS files |
+| **Logging** — use `window.Logger` instead of `console.*` | all JS files — `Logger.log/warn` respect `enabled` flag; `Logger.error` always outputs; prefix each call with `'[ModuleName]'` |
+| **New public functions** — register in `main.js` as `window.fn` wrappers | `main.js` — HTML `onclick` calls go through `window.fn`, not modules directly |
 
-// ===== ГЛОБАЛЬНІ ЗМІННІ ТА КОНСТАНТИ =====
+## Code Style
 
-// ===== ФУНКЦІЇ ЛОКАЛЬНОГО ЗБЕРЕЖЕННЯ =====
-```
+- 4-space indent, max 120 chars per line, ES6+ (const/let, arrow functions, template literals)
+- Naming: `camelCase` functions/vars, `UPPER_CASE` constants, `PascalCase` modules, `kebab-case` files
 
-## Особливості проекту
+## Versioning
 
-### Автозбереження та localStorage
-- **Автоматичне збереження**: Всі зміни зберігаються автоматично
-- **Відновлення стану**: При перезавантаженні сторінки стан відновлюється
-- **Ключі збереження**: Використовувати константи з `STORAGE_KEYS`
-- **Обробка помилок**: Завжди обгортати localStorage операції в try-catch
+Version lives in `.app-version` element in `index.html` (`vMAJOR.MINOR.PATCH`). Current: **v3.0.0**.
+Update version in the same commit as code changes. Commit prefix: `feat:`, `fix:`, or `refactor:`.
 
-### Анімації та UI
-- **Налаштовувані анімації**: Всі параметри анімації зберігаються окремо
-- **Responsive дизайн**: Підтримка різних розмірів екрану
-- **Accessibility**: Врахування доступності інтерфейсу
+## Communication
 
-### Excel інтеграція
-- **SheetJS бібліотека**: Для роботи з Excel файлами
-- **Підтримка кількох форматів**: .xlsx та .xls
-- **Автоматичне визначення структури**: Розпізнавання заголовків та даних
+Always respond in **Ukrainian**. The user understands English but prefers Ukrainian.
 
-### Тести чесності
-- **Статистичні тести**: Runs Test, Chi-square Test, тест справедливості
-- **Криптографічний генератор**: `window.RaffleEngine.secureRandom()` — єдине джерело
-- **Інтерпретація результатів**: Автоматичне пояснення статистики
+## Workflow
 
-### Звукові ефекти
-- **SoundManager**: Завантажує Base64-аудіо з `audio-data.js`, fallback на Web Audio API
-- **3 типи звуків**: spin (барабан), result (результат), victory (перемога)
-- **Ініціалізація**: Потребує взаємодії користувача (autoplay policy браузерів)
-
-## Взаємодія з AI
-- **Середовище розробки**: Linux (WSL2) з bash
-- **При використанні terminal команд використовувати bash синтаксис**
-- При аналізі коду потрібно пояснювати логіку та структуру існуючих рішень
-- При пропонуванні змін надавати кілька альтернатив, якщо це можливо
-- Використовувати сучасні практики розробки на JavaScript
-- **ЗАБОРОНЕНО виконувати команди або тести без прямого запиту розробника**
-
-## Якість коду
-- Слідкувати за принципами чистого коду
-- Уникати глобальних змінних (крім експорту модулів)
-- Код має бути читабельним та добре структурованим
-- Використовувати const за замовчуванням, let тільки при необхідності
-- Уникати var повністю
-
-## Інструменти розробки
-- **Операційна система**: Linux (WSL2)
-- **Shell**: bash
-- **IDE**: VS Code
-- **Система контролю версій**: Git
-- **Управління пакетами**: Не використовується (CDN для залежностей)
-- **Додаткові інструменти**: SheetJS для Excel, localStorage для збереження, Web Audio API для звуку
-
-## Тестування
-- **Ручне тестування**: Через веб-інтерфейс
-- **Тести чесності**: Вбудовані статистичні тести
-- **Перевірка сумісності**: Chrome 60+, Firefox 55+, Safari 12+, Edge 79+
-- **Тестування localStorage**: Перевірка збереження та відновлення стану
-
-## Безпека
-- **Валідація вводу**: Перевірка всіх користувацьких даних
-- **XSS захист**: Всі дані користувача екрануються через `escapeHtml()` (в `ui-controller.js`) перед вставкою в `innerHTML`. Числові індекси в `onclick` безпечні — вони генеруються кодом, не користувачем
-- **localStorage**: Обробка помилок при роботі з локальним сховищем в try-catch
-- **Криптографічна випадковість**: `crypto.getRandomValues()` в єдиній функції `secureRandom()` в `raffle-engine.js`
-
-## Додаткові вимоги
-
-### Performance
-- **Оптимізація анімацій**: Використання CSS transitions та transforms
-- **Ледача ініціалізація**: Модулі ініціалізуються тільки при потребі
-- **Мінімізація DOM операцій**: Батчинг змін DOM
-
-### Scalability
-- **Модульна архітектура**: Легке додавання нових функцій
-- **Конфігурація**: Винесення налаштувань в константи
-- **Розширюваність**: Можливість додавання нових тестів чесності
-
-### Logging
-- **Console логування**: Для розробки та налагодження
-- **Рівні логування**: console.log, console.warn, console.error
-- **Структуроване логування**: З префіксами модулів
-
-### Error Handling
-- **Try-catch блоки**: Для всіх критичних операцій
-- **Graceful degradation**: Продовження роботи при помилках
-- **Користувацькі повідомлення**: Зрозумілі повідомлення про помилки
-
-## Специфічні правила для статистичних модулів
-
-### Математичні обчислення
-- **Точність**: Використовувати parseFloat для дробових чисел
-- **Валідація**: Перевіряти вхідні дані на коректність
-- **Константи**: Виносити математичні константи окремо
-- **Коментарі**: Пояснювати складні формули українською
-
-### Генератори випадкових чисел
-- **Єдине джерело**: `secureRandom()` визначена тільки в `raffle-engine.js` та експортована через `window.RaffleEngine.secureRandom()`
-- **Всі модули** (`data-manager.js`, `fairness-tests.js`) використовують `window.RaffleEngine.secureRandom()` — НЕ визначають власну копію
-- **Пріоритет crypto.getRandomValues()**: з fallback на `Math.random()` для старих браузерів
-- **Документування**: Вказувати який генератор використовується
-
-### Статистичні тести
-- **Модульність**: Кожен тест в окремій функції
-- **Результати**: Структуровані об'єкти з результатами
-- **Інтерпретація**: Автоматичне пояснення результатів
-- **Прогрес**: Показ прогресу для довгих обчислень
-
-## Версіонування додатку
-
-### Де зберігається версія
-- **Єдине джерело**: елемент `.app-version` у `index.html` (статичний текст у хедері)
-- Формат: `vMAJOR.MINOR.PATCH` (semver, наприклад `v2.5.0`)
-
-### Правила оновлення версії
-- **PATCH** (`v2.7.0` → `v2.7.1`): виправлення багів, косметичні зміни
-- **MINOR** (`v2.7.0` → `v2.8.0`): нова функціональність (зворотньо сумісна)
-- **MAJOR** (`v2.7.0` → `v3.0.0`): кардинальні зміни архітектури або UI
-
-### Процес коміту
-1. Перед кожним `git commit` — оновити версію в `index.html`
-2. Включити оновлення версії в той самий коміт разом зі змінами
-3. Першим рядком commit message вказувати `feat:`, `fix:` або `refactor:`
-4. Поточна версія: **v3.0.0**
-
----
-
-### Версія інструкцій: 2.1
-### Дата оновлення: Березень 2026
-### Базується на проекті Prize Raffle v2.7.1
-
-**Автор проекту:** Розроблено за допомогою Claude AI / GitHub Copilot
-**Інструкції підготовлені:** GitHub Copilot (Claude Sonnet 4.6)
+**Always propose changes before touching files.**
+For each change: (1) describe what, (2) why, (3) which files → wait for approval.
+No tests, commands, or scripts without an explicit request.

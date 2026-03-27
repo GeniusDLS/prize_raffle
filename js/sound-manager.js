@@ -11,15 +11,18 @@ let isAudioInitialized = false;
 let currentSpinSound = null;
 
 // Аудіо об'єкти для файлів
-let audioFiles = {
+const audioFiles = {
     drumSpin: null,
     resultDing: null,
     victoryFanfare: null
 };
 
-// Base64 аудіо дані (замість локальних файлів для вирішення CORS проблем)
-// Дані завантажуються з модуля audio-data.js
-const AUDIO_URLS = {};
+// Шляхи до MP3 файлів для http/https протоколу
+const AUDIO_MP3_URLS = {
+    drumSpin: 'sounds/drum-spin.mp3',
+    resultDing: 'sounds/result-ding.mp3',
+    victoryFanfare: 'sounds/victory-fanfare.mp3'
+};
 
 // Налаштування звукових ефектів для Web Audio API fallback
 const SOUND_SETTINGS = {
@@ -51,48 +54,154 @@ const SOUND_SETTINGS = {
 // Стан завантаження аудіо файлів
 let audioFilesLoaded = false;
 let useWebAudioFallback = false;
+// Кешований проміс завантаження — щоб повторні виклики не запускали нове завантаження
+let _audioLoadPromise = null;
 
 // ===== ІНІЦІАЛІЗАЦІЯ АУДІО ФАЙЛІВ =====
 
 /**
- * Завантажити та ініціалізувати аудіо файли
+ * Повернути проміс готовності аудіо (кешований — завантаження відбувається лише один раз)
+ */
+function ensureAudioLoaded() {
+    if (audioFilesLoaded || useWebAudioFallback) {
+        return Promise.resolve();
+    }
+    if (!_audioLoadPromise) {
+        _audioLoadPromise = loadAudioFiles();
+    }
+    return _audioLoadPromise;
+}
+
+/**
+ * Динамічно підвантажити модуль audio-data.js (лише для file:// протоколу)
+ * @returns {Promise<void>}
+ */
+function loadAudioDataModule() {
+    return new Promise((resolve, reject) => {
+        if (window.AudioData) {
+            resolve();
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'js/audio-data.js';
+
+        script.addEventListener('load', () => {
+            window.Logger.log('[SoundManager]', 'Модуль audio-data.js завантажено динамічно');
+            resolve();
+        });
+
+        script.addEventListener('error', () => {
+            reject(new Error('Не вдалося завантажити audio-data.js'));
+        });
+
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Завантажити аудіо файл за URL (http/https протокол)
+ * @param {string} key - Ключ аудіо файлу
+ * @param {string} url - URL до MP3 файлу
+ */
+function loadAudioFromUrl(key, url) {
+    return new Promise((resolve, reject) => {
+        const audio = new Audio();
+
+        audio.addEventListener('canplaythrough', () => {
+            audioFiles[key] = audio;
+            resolve(audio);
+        });
+
+        audio.addEventListener('error', (e) => {
+            window.Logger.error('[SoundManager]', `Помилка завантаження ${key} з URL:`, e);
+            reject(e);
+        });
+
+        audio.preload = 'auto';
+        audio.src = url;
+    });
+}
+
+/**
+ * Завантажити та ініціалізувати аудіо файли.
+ * При http/https — завантажує MP3 напряму.
+ * При file:// — динамічно підвантажує audio-data.js і використовує Base64.
  */
 async function loadAudioFiles() {
     if (audioFilesLoaded) {
         return Promise.resolve();
     }
-    
-    window.Logger.log('[SoundManager]', 'Завантаження Base64 аудіо даних...');
-    
-    // Перевірити чи доступний модуль AudioData
-    if (!window.AudioData) {
-        window.Logger.warn('[SoundManager]', 'Модуль AudioData не завантажений, використовується Web Audio API');
+
+    const isLocalFile = window.location.protocol === 'file:';
+
+    if (!isLocalFile) {
+        // ===== HTTP/HTTPS: завантажуємо MP3 напряму =====
+        window.Logger.log('[SoundManager]', 'Завантаження MP3 файлів напряму...');
+
+        const soundNames = ['drumSpin', 'resultDing', 'victoryFanfare'];
+        const loadPromises = soundNames.map(name =>
+            loadAudioFromUrl(name, AUDIO_MP3_URLS[name]).catch(() => {
+                window.Logger.warn('[SoundManager]', `Не вдалося завантажити ${name}, буде використано Web Audio API`);
+                return null;
+            })
+        );
+
+        try {
+            const results = await Promise.all(loadPromises);
+            const successCount = results.filter(r => r !== null).length;
+
+            if (successCount === 0) {
+                window.Logger.warn('[SoundManager]', 'Жоден MP3 не завантажився, використовується Web Audio API');
+                useWebAudioFallback = true;
+                await initializeAudioContext();
+            } else {
+                window.Logger.log('[SoundManager]', `Завантажено ${successCount} з ${results.length} MP3 файлів`);
+                audioFilesLoaded = true;
+            }
+        } catch (error) {
+            window.Logger.error('[SoundManager]', 'Помилка завантаження MP3 файлів:', error);
+            useWebAudioFallback = true;
+            await initializeAudioContext();
+        }
+
+        return Promise.resolve();
+    }
+
+    // ===== FILE://: динамічно підвантажуємо audio-data.js і використовуємо Base64 =====
+    window.Logger.log('[SoundManager]', 'Локальний режим — завантаження Base64 аудіо даних...');
+
+    try {
+        await loadAudioDataModule();
+    } catch (error) {
+        window.Logger.warn('[SoundManager]', 'Не вдалося завантажити audio-data.js:', error);
         useWebAudioFallback = true;
         return initializeAudioContext();
     }
-    
-    const loadPromises = [];
+
+    if (!window.AudioData) {
+        window.Logger.warn('[SoundManager]', 'Модуль AudioData недоступний, використовується Web Audio API');
+        useWebAudioFallback = true;
+        return initializeAudioContext();
+    }
+
     const soundNames = ['drumSpin', 'resultDing', 'victoryFanfare'];
-    
-    // Завантажити Base64 аудіо дані
-    for (const soundName of soundNames) {
-        const base64Data = window.AudioData.getAudioData(soundName);
+    const loadPromises = soundNames.map(name => {
+        const base64Data = window.AudioData.getAudioData(name);
         if (base64Data) {
-            const promise = loadAudioFromBase64(soundName, base64Data).catch(() => {
-                window.Logger.warn('[SoundManager]', `Не вдалося завантажити ${soundName}, буде використано Web Audio API`);
+            return loadAudioFromBase64(name, base64Data).catch(() => {
+                window.Logger.warn('[SoundManager]', `Не вдалося завантажити ${name}, буде використано Web Audio API`);
                 return null;
             });
-            loadPromises.push(promise);
-        } else {
-            window.Logger.warn('[SoundManager]', `Base64 дані для ${soundName} не знайдені`);
-            loadPromises.push(Promise.resolve(null));
         }
-    }
-    
+        window.Logger.warn('[SoundManager]', `Base64 дані для ${name} не знайдені`);
+        return Promise.resolve(null);
+    });
+
     try {
         const results = await Promise.all(loadPromises);
-        const successCount = results.filter(result => result !== null).length;
-        
+        const successCount = results.filter(r => r !== null).length;
+
         if (successCount === 0) {
             window.Logger.warn('[SoundManager]', 'Жоден аудіо файл не завантажився з Base64, використовується Web Audio API');
             useWebAudioFallback = true;
@@ -101,13 +210,13 @@ async function loadAudioFiles() {
             window.Logger.log('[SoundManager]', `Завантажено ${successCount} з ${results.length} Base64 аудіо файлів`);
             audioFilesLoaded = true;
         }
-        
-        return Promise.resolve();
     } catch (error) {
-        window.Logger.error('[SoundManager]', 'Помилка завантаження Base64 аудіо файлів:', error);
+        window.Logger.error('[SoundManager]', 'Помилка завантаження Base64 аудіо:', error);
         useWebAudioFallback = true;
-        return initializeAudioContext();
+        await initializeAudioContext();
     }
+
+    return Promise.resolve();
 }
 
 /**
@@ -183,21 +292,21 @@ function playAudioFile(key, loop = false, volume = 1.0) {
     if (!audio) {
         return null;
     }
-    
+
     try {
-        // Клонувати аудіо об'єкт для можливості одночасного відтворення
-        const audioClone = audio.cloneNode();
-        audioClone.loop = loop;
-        audioClone.volume = volume;
-        
-        const playPromise = audioClone.play();
+        // Скидаємо позицію та відтворюємо той самий об'єкт — файл завантажується лише один раз
+        audio.loop = loop;
+        audio.volume = volume;
+        audio.currentTime = 0;
+
+        const playPromise = audio.play();
         if (playPromise !== undefined) {
             playPromise.catch(error => {
                 window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук:', error);
             });
         }
-        
-        return audioClone;
+
+        return audio;
     } catch (error) {
         window.Logger.warn('[SoundManager]', 'Помилка відтворення звуку:', error);
         return null;
@@ -266,7 +375,7 @@ function createSpinSound(duration, interval = 100) {
     
     for (let i = 0; i < ticksCount; i++) {
         const startTime = audioContext.currentTime + (i * interval / 1000);
-        const frequency = settings.frequency + (Math.random() - 0.5) * 50;
+        const frequency = settings.frequency + (window.RaffleEngine.secureRandom() - 0.5) * 50;
         
         const oscillator = createTone(
             frequency,
@@ -296,23 +405,27 @@ function playSpinSound(duration = 3) {
     }
     
     stopSpinSound(); // Зупинити попередній звук
-    
-    if (audioFilesLoaded && audioFiles.drumSpin && !useWebAudioFallback) {
-        // Використати аудіо файл
-        currentSpinSound = playAudioFile('drumSpin', true, 0.5);
-        
-        // Зупинити через вказаний час
-        setTimeout(() => {
-            stopSpinSound();
-        }, duration * 1000);
-    } else if (useWebAudioFallback) {
-        // Використати Web Audio API fallback
-        initializeAudioContext().then(() => {
-            currentSpinSound = createSpinSound(duration);
-        }).catch(error => {
-            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук обертання:', error);
-        });
-    }
+
+    ensureAudioLoaded().then(() => {
+        if (audioFilesLoaded && audioFiles.drumSpin && !useWebAudioFallback) {
+            // Використати аудіо файл
+            currentSpinSound = playAudioFile('drumSpin', true, 0.5);
+
+            // Зупинити через вказаний час
+            setTimeout(() => {
+                stopSpinSound();
+            }, duration * 1000);
+        } else if (useWebAudioFallback) {
+            // Використати Web Audio API fallback
+            initializeAudioContext().then(() => {
+                currentSpinSound = createSpinSound(duration);
+            }).catch(error => {
+                window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук обертання:', error);
+            });
+        }
+    }).catch(error => {
+        window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук обертання:', error);
+    });
 }
 
 /**
@@ -321,7 +434,7 @@ function playSpinSound(duration = 3) {
 function stopSpinSound() {
     if (currentSpinSound) {
         if (Array.isArray(currentSpinSound)) {
-            // Web Audio API oscillators
+            // Осцилятори Web Audio API
             currentSpinSound.forEach(oscillator => {
                 try {
                     oscillator.stop();
@@ -330,7 +443,7 @@ function stopSpinSound() {
                 }
             });
         } else {
-            // HTML Audio element
+            // Елемент HTML Audio
             stopAudioFile(currentSpinSound);
         }
         currentSpinSound = null;
@@ -345,18 +458,22 @@ function playResultSound() {
         return;
     }
     
-    if (audioFilesLoaded && audioFiles.resultDing && !useWebAudioFallback) {
-        // Використати аудіо файл
-        playAudioFile('resultDing', false, 0.7);
-    } else if (useWebAudioFallback) {
-        // Використати Web Audio API fallback
-        initializeAudioContext().then(() => {
-            const settings = SOUND_SETTINGS.result;
-            createTone(settings.frequency, settings.duration, settings.volume, settings.type);
-        }).catch(error => {
-            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук результату:', error);
-        });
-    }
+    ensureAudioLoaded().then(() => {
+        if (audioFilesLoaded && audioFiles.resultDing && !useWebAudioFallback) {
+            // Використати аудіо файл
+            playAudioFile('resultDing', false, 0.7);
+        } else if (useWebAudioFallback) {
+            // Використати Web Audio API fallback
+            initializeAudioContext().then(() => {
+                const settings = SOUND_SETTINGS.result;
+                createTone(settings.frequency, settings.duration, settings.volume, settings.type);
+            }).catch(error => {
+                window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук результату:', error);
+            });
+        }
+    }).catch(error => {
+        window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук результату:', error);
+    });
 }
 
 /**
@@ -367,34 +484,38 @@ function playVictorySound() {
         return;
     }
     
-    if (audioFilesLoaded && audioFiles.victoryFanfare && !useWebAudioFallback) {
-        // Використати аудіо файл
-        playAudioFile('victoryFanfare', false, 0.8);
-    } else if (useWebAudioFallback) {
-        // Використати Web Audio API fallback
-        initializeAudioContext().then(() => {
-            const settings = SOUND_SETTINGS.victory;
-            const oscillators = [];
-            
-            settings.frequencies.forEach((frequency, index) => {
-                const startTime = audioContext.currentTime + (index * settings.noteDuration);
-                
-                const oscillator = createTone(
-                    frequency,
-                    settings.noteDuration,
-                    settings.volume,
-                    settings.type,
-                    startTime
-                );
-                
-                if (oscillator) {
-                    oscillators.push(oscillator);
-                }
+    ensureAudioLoaded().then(() => {
+        if (audioFilesLoaded && audioFiles.victoryFanfare && !useWebAudioFallback) {
+            // Використати аудіо файл
+            playAudioFile('victoryFanfare', false, 0.8);
+        } else if (useWebAudioFallback) {
+            // Використати Web Audio API fallback
+            initializeAudioContext().then(() => {
+                const settings = SOUND_SETTINGS.victory;
+                const oscillators = [];
+
+                settings.frequencies.forEach((frequency, index) => {
+                    const startTime = audioContext.currentTime + (index * settings.noteDuration);
+
+                    const oscillator = createTone(
+                        frequency,
+                        settings.noteDuration,
+                        settings.volume,
+                        settings.type,
+                        startTime
+                    );
+
+                    if (oscillator) {
+                        oscillators.push(oscillator);
+                    }
+                });
+            }).catch(error => {
+                window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук перемоги:', error);
             });
-        }).catch(error => {
-            window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук перемоги:', error);
-        });
-    }
+        }
+    }).catch(error => {
+        window.Logger.warn('[SoundManager]', 'Не вдалося відтворити звук перемоги:', error);
+    });
 }
 
 // ===== ДОПОМІЖНІ ФУНКЦІЇ =====
@@ -418,7 +539,7 @@ function isSoundEnabled() {
 function initializeSoundManager() {
     // Додати обробник для ініціалізації аудіо при першій взаємодії користувача
     const initAudioOnInteraction = () => {
-        loadAudioFiles().then(() => {
+        ensureAudioLoaded().then(() => {
             window.Logger.log('[SoundManager]', 'Звуковий менеджер готовий до роботи');
         }).catch(error => {
             window.Logger.warn('[SoundManager]', 'Звуковий менеджер не може бути ініціалізований:', error);

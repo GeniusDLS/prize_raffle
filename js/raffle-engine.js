@@ -102,10 +102,10 @@ function nextRound() {
     // Показати випадкові імена під час обертання
     activeSpinInterval = setInterval(() => {
         if (participantDrum && availableParticipants.length > 0) {
-            setDrumText(participantDrum, availableParticipants[Math.floor(Math.random() * availableParticipants.length)].name);
+            setDrumText(participantDrum, availableParticipants[Math.floor(secureRandom() * availableParticipants.length)].name);
         }
         if (prizeDrum && availablePrizes.length > 0) {
-            setDrumText(prizeDrum, availablePrizes[Math.floor(Math.random() * availablePrizes.length)]);
+            setDrumText(prizeDrum, availablePrizes[Math.floor(secureRandom() * availablePrizes.length)]);
         }
     }, animationSettings.spinSpeed);
 
@@ -245,7 +245,7 @@ function secureRandom() {
         crypto.getRandomValues(array);
         return array[0] / (0xffffffff + 1);
     } else {
-        // Fallback для старих браузерів
+        // Резервний варіант для старих браузерів
         window.Logger.warn('[RaffleEngine]', 'crypto.getRandomValues недоступний, використовується Math.random()');
         return Math.random();
     }
@@ -644,7 +644,9 @@ function autoSaveAnimationSettings() {
         popupAnimationSpeed: parseFloat(popupAnimationSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
         disablePopupAppearAnimation: disablePopupAppearAnimation?.checked || false, // За замовчуванням false
         disablePopupInternalAnimations: disablePopupInternalAnimations?.checked || false, // За замовчуванням false
-        resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
+        resultHighlightDuration: (resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '')
+            ? parseFloat(resultHighlightDuration.value)
+            : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: enableSound?.checked || false,
         showDivisionOnDrum: showDivisionOnDrum?.checked || false, // За замовчуванням false
@@ -652,8 +654,12 @@ function autoSaveAnimationSettings() {
     };
     
     // Зберегти в localStorage
-    localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
-    
+    try {
+        localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
+    } catch (e) {
+        window.Logger.error('[RaffleEngine]', 'Помилка збереження налаштувань анімації:', e);
+    }
+
     // Показати короткий індикатор збереження
     showSettingsSaveIndicator();
 }
@@ -755,7 +761,9 @@ function saveAnimationSettings() {
         popupAnimationSpeed: parseFloat(popupAnimationSpeed?.value) || DEFAULT_ANIMATION_SETTINGS.popupAnimationSpeed,
         disablePopupAppearAnimation: disablePopupAppearAnimation?.checked || false, // За замовчуванням false
         disablePopupInternalAnimations: disablePopupInternalAnimations?.checked || false, // За замовчуванням false
-        resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
+        resultHighlightDuration: (resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '')
+            ? parseFloat(resultHighlightDuration.value)
+            : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: enableSound?.checked || false,
         showDivisionOnDrum: showDivisionOnDrum?.checked || false, // За замовчуванням false
@@ -763,15 +771,23 @@ function saveAnimationSettings() {
     };
     
     // Зберегти в localStorage
-    localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
-    
+    try {
+        localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
+    } catch (e) {
+        window.Logger.error('[RaffleEngine]', 'Помилка збереження налаштувань анімації:', e);
+    }
+
     alert('Налаштування анімації збережено!');
 }
 
 function resetAnimationSettings() {
     if (confirm('Скинути всі налаштування анімації на значення за замовчуванням?')) {
         animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
-        localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
+        try {
+            localStorage.setItem(window.DataManager.STORAGE_KEYS.ANIMATION_SETTINGS, JSON.stringify(animationSettings));
+        } catch (e) {
+            window.Logger.error('[RaffleEngine]', 'Помилка збереження налаштувань анімації:', e);
+        }
         loadAnimationSettingsToForm();
         alert('Налаштування скинуто на значення за замовчуванням!');
     }
@@ -800,7 +816,7 @@ function initializePopupHandlers() {
         // Popup тепер закривається тільки кнопкою "Далі" або Escape
         
         // Закрити popup при натисканні Escape
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && popup.style.display === 'flex') {
                 hideWinnerPopup();
             }

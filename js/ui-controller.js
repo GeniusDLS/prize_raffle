@@ -304,7 +304,10 @@ function updateResultsDisplay() {
     resultsList.innerHTML = results.map(result => `
         <div class="result-item">
             <span class="round-indicator">Раунд ${result.round}</span>
-            <strong>${escapeHtml(result.winner)}</strong>${result.winnerPosition ? ` — ${escapeHtml(result.winnerPosition)}` : ''}${result.winnerDivision ? ` (Підрозділ: ${escapeHtml(result.winnerDivision)})` : ''} виграв <strong>${escapeHtml(result.prize)}</strong>
+            <strong>${escapeHtml(result.winner)}</strong>
+            ${result.winnerPosition ? ` — ${escapeHtml(result.winnerPosition)}` : ''}
+            ${result.winnerDivision ? ` (Підрозділ: ${escapeHtml(result.winnerDivision)})` : ''}
+            виграв <strong>${escapeHtml(result.prize)}</strong>
         </div>
     `).join('');
 }
@@ -319,25 +322,25 @@ function setupFormHandlers() {
     const participantWeight = document.getElementById('participant-weight');
     
     if (participantName) {
-        participantName.addEventListener('keypress', function(e) {
+        participantName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addParticipant();
         });
     }
     
     if (participantPosition) {
-        participantPosition.addEventListener('keypress', function(e) {
+        participantPosition.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addParticipant();
         });
     }
     
     if (participantDivision) {
-        participantDivision.addEventListener('keypress', function(e) {
+        participantDivision.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addParticipant();
         });
     }
     
     if (participantWeight) {
-        participantWeight.addEventListener('keypress', function(e) {
+        participantWeight.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addParticipant();
         });
     }
@@ -347,13 +350,13 @@ function setupFormHandlers() {
     const prizeCount = document.getElementById('prize-count');
     
     if (prizeName) {
-        prizeName.addEventListener('keypress', function(e) {
+        prizeName.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addPrize();
         });
     }
     
     if (prizeCount) {
-        prizeCount.addEventListener('keypress', function(e) {
+        prizeCount.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') window.DataManager.addPrize();
         });
     }
@@ -365,7 +368,7 @@ function setupNavigation() {
     // Налаштувати навігаційні вкладки
     const navTabs = document.querySelectorAll('.nav-tab');
     navTabs.forEach(tab => {
-        tab.addEventListener('click', function(e) {
+        tab.addEventListener('click', (e) => {
             e.preventDefault();
             
             // Визначити сторінку за текстом вкладки
@@ -512,7 +515,7 @@ function initializeUI() {
 
 function saveActiveTab(pageId) {
     try {
-        localStorage.setItem('raffle_active_tab', pageId);
+        localStorage.setItem(window.DataManager.STORAGE_KEYS.ACTIVE_TAB, pageId);
     } catch (error) {
         window.Logger.error('[UIController]', 'Помилка збереження активної вкладки:', error);
     }
@@ -520,7 +523,7 @@ function saveActiveTab(pageId) {
 
 function loadActiveTab() {
     try {
-        return localStorage.getItem('raffle_active_tab') || 'data'; // За замовчуванням - вкладка даних
+        return localStorage.getItem(window.DataManager.STORAGE_KEYS.ACTIVE_TAB) || 'data'; // За замовчуванням - вкладка даних
     } catch (error) {
         window.Logger.error('[UIController]', 'Помилка завантаження активної вкладки:', error);
         return 'data';
@@ -590,7 +593,7 @@ function showDataTab(tabName) {
 
 function saveActiveDataTab(tabName) {
     try {
-        localStorage.setItem('raffle_active_data_tab', tabName);
+        localStorage.setItem(window.DataManager.STORAGE_KEYS.ACTIVE_DATA_TAB, tabName);
     } catch (error) {
         window.Logger.error('[UIController]', 'Помилка збереження активної підзакладки даних:', error);
     }
@@ -598,7 +601,7 @@ function saveActiveDataTab(tabName) {
 
 function loadActiveDataTab() {
     try {
-        return localStorage.getItem('raffle_active_data_tab') || 'participants'; // За замовчуванням - учасники
+        return localStorage.getItem(window.DataManager.STORAGE_KEYS.ACTIVE_DATA_TAB) || 'participants'; // За замовчуванням - учасники
     } catch (error) {
         window.Logger.error('[UIController]', 'Помилка завантаження активної підзакладки даних:', error);
         return 'participants';

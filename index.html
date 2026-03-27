@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; media-src 'self' data: blob:; connect-src https://cdn.jsdelivr.net;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net;">
     <title>Розіграш призів</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5" rel="stylesheet" type="text/css" />
@@ -44,7 +44,7 @@
             </div>
             <div class="navbar-end">
                 <a href="https://send.monobank.ua/jar/2Rumu89c2v" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm gap-1">
-                    <span class="app-version badge badge-outline text-xs">v3.1.2</span>
+                    <span class="app-version badge badge-outline text-xs">v3.1.6</span>
                     <span class="hidden sm:inline text-xs opacity-70">☕ На каву</span>
                 </a>
             </div>
@@ -564,11 +564,14 @@
 
     <!-- Модулі додатку (порядок важливий!) -->
     <script src="js/data-manager.js?v=3.0.0"></script>
-    <script src="js/audio-data.js?v=3.0.0"></script>
-    <script src="js/sound-manager.js?v=3.0.0"></script>
+    <script src="js/sound-manager.js?v=3.1.6"></script>
     <script src="js/raffle-engine.js?v=3.0.0"></script>
     <script src="js/ui-controller.js?v=3.0.0"></script>
-    <script src="js/fairness-tests.js?v=3.0.0"></script>
-    <script src="js/main.js?v=3.0.0"></script>
+    <script src="js/fairness-tests.js?v=3.1.0"></script>
+    <script src="js/fairness-sequence-test.js?v=3.1.0"></script>
+    <script src="js/fairness-distribution-test.js?v=3.1.0"></script>
+    <script src="js/fairness-fairness-test.js?v=3.1.0"></script>
+    <script src="js/fairness-simulation-test.js?v=3.1.0"></script>
+    <script src="js/main.js?v=3.1.0"></script>
 </body>
 </html>

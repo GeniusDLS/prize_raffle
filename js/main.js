@@ -5,7 +5,7 @@
 
 // ===== ІНІЦІАЛІЗАЦІЯ ДОДАТКУ =====
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     window.Logger.log('[Main]', 'Ініціалізація додатку розіграшу призів...');
     
     // Перевірити наявність необхідних модулів
@@ -75,9 +75,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Показати повідомлення про готовність
         setTimeout(() => {
-            const lastSave = localStorage.getItem(window.DataManager.STORAGE_KEYS.LAST_SAVE);
-            if (lastSave && window.DataManager.isRaffleActive) {
-                window.DataManager.showAutoSaveStatus('restored');
+            try {
+                const lastSave = localStorage.getItem(window.DataManager.STORAGE_KEYS.LAST_SAVE);
+                if (lastSave && window.DataManager.isRaffleActive) {
+                    window.DataManager.showAutoSaveStatus('restored');
+                }
+            } catch (e) {
+                // localStorage недоступний
             }
         }, 1000);
         
@@ -237,6 +241,22 @@ window.runDistributionTest = function() {
 
 window.clearDistributionTestResults = function() {
     if (window.FairnessTests) window.FairnessTests.clearDistributionTestResults();
+};
+
+window.runFairnessTest = function() {
+    if (window.FairnessTests) window.FairnessTests.runFairnessTest();
+};
+
+window.clearFairnessTestResults = function() {
+    if (window.FairnessTests) window.FairnessTests.clearFairnessTestResults();
+};
+
+window.runSimulationTest = function() {
+    if (window.FairnessTests) window.FairnessTests.runSimulationTest();
+};
+
+window.clearSimulationResults = function() {
+    if (window.FairnessTests) window.FairnessTests.clearSimulationResults();
 };
 
 // Функції налаштувань
@@ -399,7 +419,7 @@ window.importAppState = function(state) {
 // ===== ОБРОБКА ПОМИЛОК =====
 
 // Глобальний обробник помилок
-window.addEventListener('error', function(e) {
+window.addEventListener('error', (e) => {
     window.Logger.error('[Main]', 'Глобальна помилка:', e.error);
     
     // Не показувати alert для кожної помилки, щоб не спамити користувача
@@ -407,14 +427,14 @@ window.addEventListener('error', function(e) {
 });
 
 // Обробник для необроблених promise відхилень
-window.addEventListener('unhandledrejection', function(e) {
+window.addEventListener('unhandledrejection', (e) => {
     window.Logger.error('[Main]', 'Необроблене відхилення Promise:', e.reason);
     e.preventDefault(); // Не показувати в консолі браузера
 });
 
 // ===== ЕКСПОРТ ГОЛОВНОГО ОБ'ЄКТУ =====
 
-window.RafflePrizeApp = {
+window.Main = {
     // Модулі
     DataManager: () => window.DataManager,
     RaffleEngine: () => window.RaffleEngine,
@@ -438,13 +458,13 @@ window.RafflePrizeApp = {
         window.Logger.log('[Main]', '  - RaffleEngine:', !!window.RaffleEngine);
         window.Logger.log('[Main]', '  - UIController:', !!window.UIController);
         window.Logger.log('[Main]', '  - FairnessTests:', !!window.FairnessTests);
-        window.Logger.log('[Main]', 'Для перевірки статусу викличте: RafflePrizeApp.checkStatus()');
+        window.Logger.log('[Main]', 'Для перевірки статусу викличте: Main.checkStatus()');
     }
 };
 
 // Показати інформацію про додаток при завантаженні (тільки в режимі розробки)
 if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
     setTimeout(() => {
-        window.RafflePrizeApp.info();
+        window.Main.info();
     }, 2000);
 }

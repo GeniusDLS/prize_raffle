@@ -49,6 +49,7 @@ const STORAGE_KEYS = {
     ANIMATION_SETTINGS: 'raffle_animation_settings',
     ACTIVE_TAB: 'raffle_active_tab',
     PARTICIPANTS_SORT: 'raffle_participants_sort',
+    ACTIVE_DATA_TAB: 'raffle_active_data_tab',
     THEME: 'raffle_theme'
     // BACKUP видалено - немає функції відновлення, автозбереження достатньо
 };
@@ -57,13 +58,6 @@ const STORAGE_KEYS = {
 
 function saveToStorage() {
     try {
-        const data = {
-            participants: participants,
-            prizes: prizes,
-            results: results,
-            timestamp: new Date().toISOString()
-        };
-
         localStorage.setItem(STORAGE_KEYS.PARTICIPANTS, JSON.stringify(participants));
         localStorage.setItem(STORAGE_KEYS.PRIZES, JSON.stringify(prizes));
         localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
@@ -213,15 +207,19 @@ function clearStoredData() {
     if (confirm('Видалити всі збережені дані? Ця дія незворотна.')) {
         // createBackup() видалено - автозбереження достатньо для захисту даних
         
-        localStorage.removeItem(STORAGE_KEYS.PARTICIPANTS);
-        localStorage.removeItem(STORAGE_KEYS.PRIZES);
-        localStorage.removeItem(STORAGE_KEYS.RESULTS);
-        localStorage.removeItem(STORAGE_KEYS.CURRENT_ROUND);
-        localStorage.removeItem(STORAGE_KEYS.IS_RAFFLE_ACTIVE);
-        localStorage.removeItem(STORAGE_KEYS.AVAILABLE_PARTICIPANTS);
-        localStorage.removeItem(STORAGE_KEYS.AVAILABLE_PRIZES);
-        localStorage.removeItem(STORAGE_KEYS.RAFFLE_STATE);
-        localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
+        try {
+            localStorage.removeItem(STORAGE_KEYS.PARTICIPANTS);
+            localStorage.removeItem(STORAGE_KEYS.PRIZES);
+            localStorage.removeItem(STORAGE_KEYS.RESULTS);
+            localStorage.removeItem(STORAGE_KEYS.CURRENT_ROUND);
+            localStorage.removeItem(STORAGE_KEYS.IS_RAFFLE_ACTIVE);
+            localStorage.removeItem(STORAGE_KEYS.AVAILABLE_PARTICIPANTS);
+            localStorage.removeItem(STORAGE_KEYS.AVAILABLE_PRIZES);
+            localStorage.removeItem(STORAGE_KEYS.RAFFLE_STATE);
+            localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
+        } catch (e) {
+            window.Logger.error('[DataManager]', 'Помилка очищення localStorage:', e);
+        }
         // Налаштування не очищаються: STORAGE_KEYS.ANIMATION_SETTINGS, STORAGE_KEYS.ACTIVE_TAB
         
         participants = [];
@@ -269,7 +267,7 @@ function setupAutoSave() {
 }
 
 function setupBeforeUnload() {
-    window.addEventListener('beforeunload', function(e) {
+    window.addEventListener('beforeunload', (e) => {
         if (hasUnsavedChanges) {
             e.preventDefault();
             e.returnValue = 'У вас є незбережені зміни. Ви впевнені, що хочете покинути сторінку?';
@@ -686,7 +684,7 @@ function handleExcelLoad(event) {
     }
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = (e) => {
         try {
             const data = e.target.result;
             const workbook = XLSX.read(data, { type: 'binary' });
