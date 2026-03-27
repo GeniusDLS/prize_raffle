@@ -30,6 +30,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     try {
+        // 0. Завантажити збережену тему (до рендеру UI, щоб уникнути моргання)
+        window.Logger.log('[Main]', 'Завантаження теми...');
+        window.UIController.loadSavedTheme();
+
         // 1. Завантажити дані з localStorage
         window.Logger.log('[Main]', 'Завантаження збережених даних...');
         window.DataManager.loadFromStorage();
