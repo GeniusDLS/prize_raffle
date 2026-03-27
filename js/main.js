@@ -68,6 +68,10 @@ document.addEventListener('DOMContentLoaded', function() {
         window.DataManager.setupBeforeUnload();
         
         window.Logger.log('[Main]', 'Ініціалізація завершена успішно!');
+
+        // 7. Сховати екран завантаження
+        const loader = document.getElementById('app-loader');
+        if (loader) { loader.classList.add('hidden'); }
         
         // Показати повідомлення про готовність
         setTimeout(() => {
@@ -79,6 +83,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
     } catch (error) {
         window.Logger.error('[Main]', 'Помилка під час ініціалізації:', error);
+        // Сховати екран завантаження навіть при помилці
+        const loader = document.getElementById('app-loader');
+        if (loader) { loader.classList.add('hidden'); }
         alert('Виникла помилка під час ініціалізації додатку. Перезавантажте сторінку.');
     }
 });

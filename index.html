@@ -10,8 +10,25 @@
     <link href="https://cdn.jsdelivr.net/npm/daisyui@5/themes.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="style.css">
+    <!-- Миттєве застосування збереженої теми до завантаження JS модулів -->
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem('raffle_theme');
+                if (saved) { document.documentElement.setAttribute('data-theme', saved); }
+            } catch(e) {}
+        })();
+    </script>
 </head>
 <body>
+    <!-- Екран завантаження -->
+    <div id="app-loader">
+        <div class="app-loader-content">
+            <div class="app-loader-spinner"></div>
+            <span class="app-loader-text">Завантаження...</span>
+        </div>
+    </div>
+
     <!-- Індикатор автозбереження -->
     <div id="auto-save-indicator" class="auto-save-indicator">💾 Автозбереження активне</div>
 
@@ -27,7 +44,7 @@
             </div>
             <div class="navbar-end">
                 <a href="https://send.monobank.ua/jar/2Rumu89c2v" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm gap-1">
-                    <span class="app-version badge badge-outline text-xs">v3.1.1</span>
+                    <span class="app-version badge badge-outline text-xs">v3.1.2</span>
                     <span class="hidden sm:inline text-xs opacity-70">☕ На каву</span>
                 </a>
             </div>
