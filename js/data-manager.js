@@ -105,6 +105,8 @@ function loadFromStorage() {
 
         if (savedParticipants) {
             participants = JSON.parse(savedParticipants);
+            // Міграція: додати position для старих записів без цього поля
+            participants = participants.map(p => ({ position: '', ...p }));
         }
         if (savedPrizes) {
             prizes = JSON.parse(savedPrizes);
@@ -120,6 +122,8 @@ function loadFromStorage() {
         }
         if (savedAvailableParticipants) {
             availableParticipants = JSON.parse(savedAvailableParticipants);
+            // Міграція: додати position для старих записів
+            availableParticipants = availableParticipants.map(p => ({ position: '', ...p }));
         }
         if (savedAvailablePrizes) {
             availablePrizes = JSON.parse(savedAvailablePrizes);

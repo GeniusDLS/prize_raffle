@@ -19,7 +19,8 @@ const DEFAULT_ANIMATION_SETTINGS = {
     resultHighlightDuration: 0, // секунди - тривалість підсвічування
     popupCountdownTime: 60, // секунди
     enableSound: true,
-    showDivisionOnDrum: false // показувати підрозділ на барабані після виграшу
+    showDivisionOnDrum: false, // показувати підрозділ на барабані після виграшу
+    showPositionOnDrum: false  // показувати посаду на барабані після виграшу
 };
 
 let animationSettings = { ...DEFAULT_ANIMATION_SETTINGS };
@@ -125,9 +126,13 @@ function nextRound() {
         const wonPrize = availablePrizes[prizeIndex];
 
         // Встановити фінальний результат
-        const displayText = animationSettings.showDivisionOnDrum && winner.division
-            ? `${winner.name}\n${winner.division}`
-            : winner.name;
+        let displayText = winner.name;
+        if (animationSettings.showPositionOnDrum && winner.position) {
+            displayText += `\n${winner.position}`;
+        }
+        if (animationSettings.showDivisionOnDrum && winner.division) {
+            displayText += `\n${winner.division}`;
+        }
         setDrumText(participantDrum, displayText);
         setDrumText(prizeDrum, wonPrize);
 
@@ -412,7 +417,7 @@ function showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName) 
     if (winnerNameEl) winnerNameEl.textContent = winnerName;
     if (winnerPositionEl) {
         winnerPositionEl.textContent = winnerPosition || '';
-        winnerPositionEl.style.display = winnerPosition ? '' : 'none';
+        winnerPositionEl.style.display = winnerPosition ? 'block' : 'none';
     }
     if (winnerDivisionEl) winnerDivisionEl.textContent = winnerDivision || 'Не вказано';
     if (winnerPrizeEl) winnerPrizeEl.textContent = prizeName;
@@ -588,6 +593,7 @@ function loadAnimationSettingsToForm() {
     const popupCountdownTime = document.getElementById('popup-countdown-time');
     const enableSound = document.getElementById('enable-sound');
     const showDivisionOnDrum = document.getElementById('show-division-on-drum');
+    const showPositionOnDrum = document.getElementById('show-position-on-drum');
     
     if (spinDuration) spinDuration.value = animationSettings.spinDuration;
     if (spinSpeed) spinSpeed.value = animationSettings.spinSpeed;
@@ -602,6 +608,7 @@ function loadAnimationSettingsToForm() {
     if (popupCountdownTime) popupCountdownTime.value = animationSettings.popupCountdownTime;
     if (enableSound) enableSound.checked = animationSettings.enableSound;
     if (showDivisionOnDrum) showDivisionOnDrum.checked = animationSettings.showDivisionOnDrum;
+    if (showPositionOnDrum) showPositionOnDrum.checked = animationSettings.showPositionOnDrum;
     
     // Ініціалізувати автозбереження після завантаження значень тільки якщо ще не ініціалізовано
     if (!window._animationAutoSaveInitialized) {
@@ -625,6 +632,7 @@ function autoSaveAnimationSettings() {
     const popupCountdownTime = document.getElementById('popup-countdown-time');
     const enableSound = document.getElementById('enable-sound');
     const showDivisionOnDrum = document.getElementById('show-division-on-drum');
+    const showPositionOnDrum = document.getElementById('show-position-on-drum');
     
     animationSettings = {
         spinDuration: parseFloat(spinDuration?.value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
@@ -639,7 +647,8 @@ function autoSaveAnimationSettings() {
         resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: enableSound?.checked || false,
-        showDivisionOnDrum: showDivisionOnDrum?.checked || false // За замовчуванням false
+        showDivisionOnDrum: showDivisionOnDrum?.checked || false, // За замовчуванням false
+        showPositionOnDrum: showPositionOnDrum?.checked || false  // За замовчуванням false
     };
     
     // Зберегти в localStorage
@@ -695,7 +704,8 @@ function setupAnimationSettingsAutoSave() {
         'result-highlight-duration',
         'popup-countdown-time',
         'enable-sound',
-        'show-division-on-drum'
+        'show-division-on-drum',
+        'show-position-on-drum'
     ];
     
     settingsFields.forEach(fieldId => {
@@ -733,6 +743,7 @@ function saveAnimationSettings() {
     const popupCountdownTime = document.getElementById('popup-countdown-time');
     const enableSound = document.getElementById('enable-sound');
     const showDivisionOnDrum = document.getElementById('show-division-on-drum');
+    const showPositionOnDrum = document.getElementById('show-position-on-drum');
     
     animationSettings = {
         spinDuration: parseFloat(spinDuration?.value) || DEFAULT_ANIMATION_SETTINGS.spinDuration,
@@ -747,7 +758,8 @@ function saveAnimationSettings() {
         resultHighlightDuration: resultHighlightDuration?.value !== undefined && resultHighlightDuration?.value !== '' ? parseFloat(resultHighlightDuration.value) : DEFAULT_ANIMATION_SETTINGS.resultHighlightDuration,
         popupCountdownTime: parseInt(popupCountdownTime?.value) || DEFAULT_ANIMATION_SETTINGS.popupCountdownTime,
         enableSound: enableSound?.checked || false,
-        showDivisionOnDrum: showDivisionOnDrum?.checked || false // За замовчуванням false
+        showDivisionOnDrum: showDivisionOnDrum?.checked || false, // За замовчуванням false
+        showPositionOnDrum: showPositionOnDrum?.checked || false  // За замовчуванням false
     };
     
     // Зберегти в localStorage

@@ -205,8 +205,8 @@ window.clearStoredData = function() {
 // clearResults видалено - використовується напряму з DataManager
 
 // Функції popup
-window.showWinnerPopup = function(winnerName, winnerDivision, prizeName) {
-    if (window.RaffleEngine) window.RaffleEngine.showWinnerPopup(winnerName, winnerDivision, prizeName);
+window.showWinnerPopup = function(winnerName, winnerPosition, winnerDivision, prizeName) {
+    if (window.RaffleEngine) window.RaffleEngine.showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName);
 };
 
 window.hideWinnerPopup = function() {
@@ -420,7 +420,7 @@ window.RafflePrizeApp = {
     importState: window.importAppState,
     
     // Версія
-    version: '2.2-modular',
+    version: 'v3.1.1',
     
     // Інформація про модулі
     info: function() {
