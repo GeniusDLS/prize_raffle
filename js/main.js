@@ -5,7 +5,7 @@
 
 // ===== ВЕРСІЯ ДОДАТКУ =====
 
-const APP_VERSION = 'v3.2.1';
+const APP_VERSION = 'v3.2.3';
 
 // ===== ІНІЦІАЛІЗАЦІЯ ДОДАТКУ =====
 
@@ -239,11 +239,11 @@ window.hideWinnerPopup = function() {
 //   fairness-tests.js → fairness-sequence-test.js → fairness-distribution-test.js
 //   → fairness-fairness-test.js → fairness-simulation-test.js
 const FAIRNESS_MODULES = [
-    'js/fairness-tests.js?v=3.2.0',
-    'js/fairness-sequence-test.js?v=3.2.0',
-    'js/fairness-distribution-test.js?v=3.2.0',
-    'js/fairness-fairness-test.js?v=3.2.0',
-    'js/fairness-simulation-test.js?v=3.2.0',
+    'js/fairness-tests.js?v=3.2.3',
+    'js/fairness-sequence-test.js?v=3.2.3',
+    'js/fairness-distribution-test.js?v=3.2.3',
+    'js/fairness-fairness-test.js?v=3.2.3',
+    'js/fairness-simulation-test.js?v=3.2.3',
 ];
 
 let _fairnessLoading = false;

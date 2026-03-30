@@ -404,6 +404,14 @@ body {
     font-size: 1.15em;
 }
 
+.drum-content.wrap-text {
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    text-overflow: clip;
+    line-height: 1.3;
+}
+
 /* Slot-machine вертикальний скрол */
 .drum-content.spinning {
     animation: slotSpin 0.7s ease-in-out infinite;

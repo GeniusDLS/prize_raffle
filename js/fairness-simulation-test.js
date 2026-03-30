@@ -30,14 +30,16 @@ async function runSimulationTest() {
     }
 
     const participants = window.DataManager.participants;
-    const prizeCount = window.DataManager.prizes.length;
+    const prizes = window.DataManager.prizes;
+    const uniquePrizeCount = prizes.length;
+    const totalPrizeCount = prizes.reduce((sum, p) => sum + p.count, 0);
 
     if (participants.length < 2) {
         alert('Для симуляції потрібно мінімум 2 учасники!');
         return;
     }
 
-    if (prizeCount >= participants.length) {
+    if (totalPrizeCount >= participants.length) {
         alert('Кількість призів повинна бути меншою за кількість учасників для симуляції без повторень!');
         return;
     }
@@ -46,10 +48,10 @@ async function runSimulationTest() {
     hideSimulationResults();
 
     try {
-        const simData = await simulateFullRaffles(participants, prizeCount, simulationCount);
+        const simData = await simulateFullRaffles(participants, totalPrizeCount, uniquePrizeCount, simulationCount);
         updateSimulationStatus('Обчислення точних теоретичних ймовірностей...');
         await new Promise(resolve => setTimeout(resolve, 10));
-        const exactProbabilities = computeExactInclusionProbabilities(participants, prizeCount);
+        const exactProbabilities = computeExactInclusionProbabilities(participants, totalPrizeCount);
         displaySimulationResults(participants, simData, exactProbabilities);
         hideSimulationStatus();
     } catch (error) {
@@ -62,8 +64,8 @@ async function runSimulationTest() {
  * Симулює N повних розіграшів з вилученням переможців
  * У кожному розіграші переможець виключається з пулу для наступних призів
  */
-async function simulateFullRaffles(participants, prizeCount, simulationCount) {
-    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів × ${prizeCount} раундів...`);
+async function simulateFullRaffles(participants, prizeCount, uniquePrizeCount, simulationCount) {
+    window.Logger.log('[FairnessTests]', `Симуляція ${simulationCount} розіграшів × ${prizeCount} раундів (${uniquePrizeCount} типів призів)...`);
 
     const winCounts = {};
     participants.forEach(p => {
@@ -102,6 +104,7 @@ async function simulateFullRaffles(participants, prizeCount, simulationCount) {
         winCounts,
         simulationCount,
         prizeCount,
+        uniquePrizeCount,
         participantCount: participants.length
     };
 }
@@ -174,7 +177,7 @@ function computeExactInclusionProbabilities(participants, prizeCount) {
  */
 function displaySimulationResults(participants, simData, exactProbabilities = null) {
     const totalWeight = participants.reduce((sum, p) => sum + p.weight, 0);
-    const { winCounts, simulationCount, prizeCount } = simData;
+    const { winCounts, simulationCount, prizeCount, uniquePrizeCount } = simData;
     const useExact = exactProbabilities !== null;
 
     // Теоретична ймовірність: точна (DP) або наближена K × w_i / W
@@ -205,7 +208,9 @@ function displaySimulationResults(participants, simData, exactProbabilities = nu
     // Оновити картки результатів
     updateSimulationResultValue('sim-total-simulations', simulationCount.toLocaleString());
     updateSimulationResultValue('sim-participants-count', participants.length.toString());
-    updateSimulationResultValue('sim-prize-count', prizeCount.toString());
+    updateSimulationResultValue('sim-prize-count', uniquePrizeCount !== undefined
+        ? `${prizeCount} (${uniquePrizeCount} тип${getPrizeTypeSuffix(uniquePrizeCount)})`
+        : prizeCount.toString());
     updateSimulationResultValue('sim-max-probability', `${(maxProb * 100).toFixed(1)}%`);
     updateSimulationResultValue('sim-min-probability', `${(minProb * 100).toFixed(1)}%`);
     updateSimulationResultValue('sim-avg-deviation', `${(avgDeviation * 100).toFixed(2)}% (очік. ~${(expectedAvgDeviation * 100).toFixed(2)}%)`);
@@ -277,7 +282,7 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
     const interpretationEl = document.getElementById('simulation-interpretation-text');
     if (!interpretationEl) { return; }
 
-    const { simulationCount, prizeCount, participantCount } = simData;
+    const { simulationCount, prizeCount, uniquePrizeCount, participantCount } = simData;
     const maxDeviation = Math.max(...stats.map(s => Math.abs(s.deviation)));
     const maxDeviationStat = stats.reduce((max, s) => Math.abs(s.deviation) > Math.abs(max.deviation) ? s : max, stats[0]);
 
@@ -301,9 +306,13 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
     const escapeHtml = window.UIController.escapeHtml;
     const betterSimCount = Math.min(TEST_CONSTANTS.MAX_SIMULATIONS, simulationCount * 5);
 
+    const prizesLabel = uniquePrizeCount !== undefined
+        ? `${prizeCount} призами (${uniquePrizeCount} тип${getPrizeTypeSuffix(uniquePrizeCount)})`
+        : `${prizeCount} призами`;
+
     interpretationEl.innerHTML = `
         <div class="${qualityClass}">${qualityLabel}</div>
-        <p>За ${simulationCount.toLocaleString()} симуляцій розіграшу з ${prizeCount} призами та ${participantCount} учасниками:</p>
+        <p>За ${simulationCount.toLocaleString()} симуляцій розіграшу з ${prizesLabel} та ${participantCount} учасниками:</p>
         <p>Середнє відхилення від теорії: <strong>${(avgDeviation * 100).toFixed(2)}%</strong>,
         очікуваний статистичний шум: <strong>~${(expectedAvgDeviation * 100).toFixed(2)}%</strong>
         (коефіцієнт: ${deviationRatio.toFixed(2)}×).
@@ -465,6 +474,18 @@ function drawSimulationChart(stats, simulationCount) {
         ctx.textAlign = 'center';
         ctx.fillText(`${(v * 100).toFixed(0)}%`, xScale(v), marginTop + n * rowH + 18);
     }
+}
+
+/**
+ * Повертає закінчення для слова "тип" залежно від числа (1 тип, 2 типи, 5 типів)
+ */
+function getPrizeTypeSuffix(n) {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 14) return 'ів';
+    if (mod10 === 1) return '';
+    if (mod10 >= 2 && mod10 <= 4) return 'и';
+    return 'ів';
 }
 
 /**

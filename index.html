@@ -493,7 +493,7 @@
                                         <div class="results-grid">
                                             <div class="result-card"><div class="result-title">Симуляцій</div><div class="result-value" id="sim-total-simulations">-</div></div>
                                             <div class="result-card"><div class="result-title">Учасників</div><div class="result-value" id="sim-participants-count">-</div></div>
-                                            <div class="result-card"><div class="result-title">Призів на розіграш</div><div class="result-value" id="sim-prize-count">-</div></div>
+                                            <div class="result-card"><div class="result-title">Призів (всього / типів)</div><div class="result-value" id="sim-prize-count">-</div></div>
                                             <div class="result-card"><div class="result-title">Найвища ймовірність</div><div class="result-value" id="sim-max-probability">-</div></div>
                                             <div class="result-card"><div class="result-title">Найнижча ймовірність</div><div class="result-value" id="sim-min-probability">-</div></div>
                                             <div class="result-card"><div class="result-title">Сер. відхилення</div><div class="result-value" id="sim-avg-deviation">-</div></div>
@@ -600,6 +600,15 @@
 
     <!-- Модулі додатку (порядок важливий!) -->
     <script src="js/data-manager.js?v=3.0.0"></script>
+
+    <!-- Тестові пресети (завантажуються після data-manager, додають до TEST_DATA_PRESETS) -->
+    <script src="js/presets/preset-corporate.js?v=3.2.3"></script>
+    <script src="js/presets/preset-it-team.js?v=3.2.3"></script>
+    <script src="js/presets/preset-school.js?v=3.2.3"></script>
+    <script src="js/presets/preset-small.js?v=3.2.3"></script>
+    <script src="js/presets/preset-large.js?v=3.2.3"></script>
+    <script src="js/presets/preset-stress.js?v=3.2.3"></script>
+
     <script src="js/sound-manager.js?v=3.1.6"></script>
     <script src="js/raffle-engine.js?v=3.0.0"></script>
     <script src="js/ui-controller.js?v=3.0.0"></script>

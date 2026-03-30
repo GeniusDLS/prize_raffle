@@ -833,10 +833,15 @@ function setDrumText(drumElement, text) {
         drumElement.title = text; // Показує повний текст при наведенні
         
         // Додати CSS клас для багаторядкового тексту, якщо текст містить перенос рядка
+        // або клас wrap-text для довгих назв без явних переносів
         if (text.includes('\n')) {
             drumElement.classList.add('multi-line');
-        } else {
+            drumElement.classList.remove('wrap-text');
+        } else if (text.length > 20) {
+            drumElement.classList.add('wrap-text');
             drumElement.classList.remove('multi-line');
+        } else {
+            drumElement.classList.remove('multi-line', 'wrap-text');
         }
     }
 }
