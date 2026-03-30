@@ -539,6 +539,14 @@ function isSoundEnabled() {
 function initializeSoundManager() {
     // Додати обробник для ініціалізації аудіо при першій взаємодії користувача
     const initAudioOnInteraction = () => {
+        // Якщо звуки вимкнені — не завантажувати аудіо
+        if (!isSoundEnabled()) {
+            document.removeEventListener('click', initAudioOnInteraction);
+            document.removeEventListener('keydown', initAudioOnInteraction);
+            document.removeEventListener('touchstart', initAudioOnInteraction);
+            return;
+        }
+
         ensureAudioLoaded().then(() => {
             window.Logger.log('[SoundManager]', 'Звуковий менеджер готовий до роботи');
         }).catch(error => {
@@ -546,17 +554,32 @@ function initializeSoundManager() {
             useWebAudioFallback = true;
             return initializeAudioContext();
         });
-        
+
         // Видалити обробники після першої ініціалізації
         document.removeEventListener('click', initAudioOnInteraction);
         document.removeEventListener('keydown', initAudioOnInteraction);
         document.removeEventListener('touchstart', initAudioOnInteraction);
     };
-    
+
     // Додати обробники для різних типів взаємодії
     document.addEventListener('click', initAudioOnInteraction);
     document.addEventListener('keydown', initAudioOnInteraction);
     document.addEventListener('touchstart', initAudioOnInteraction);
+
+    // Якщо звуки вмикаються в налаштуваннях — одразу завантажити аудіо
+    const enableSoundCheckbox = document.getElementById('enable-sound');
+    if (enableSoundCheckbox) {
+        enableSoundCheckbox.addEventListener('change', () => {
+            if (enableSoundCheckbox.checked) {
+                window.Logger.log('[SoundManager]', 'Звуки увімкнено — завантаження аудіо...');
+                ensureAudioLoaded().catch(error => {
+                    window.Logger.warn('[SoundManager]', 'Не вдалося завантажити аудіо після увімкнення:', error);
+                    useWebAudioFallback = true;
+                    initializeAudioContext();
+                });
+            }
+        });
+    }
 }
 
 // ===== ЕКСПОРТ МОДУЛЯ =====
