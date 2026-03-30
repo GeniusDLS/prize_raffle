@@ -498,9 +498,20 @@
                                             <div class="result-card"><div class="result-title">Найнижча ймовірність</div><div class="result-value" id="sim-min-probability">-</div></div>
                                             <div class="result-card"><div class="result-title">Сер. відхилення</div><div class="result-value" id="sim-avg-deviation">-</div></div>
                                         </div>
-                                        <div class="simulation-chart-container"><canvas id="simulation-chart"></canvas></div>
-                                        <div class="participants-stats"><h6>Ймовірності учасників (сортування: найвища очікувана):</h6><div id="simulation-results-table"></div></div>
-                                        <div class="test-interpretation"><h6>Інтерпретація результатів:</h6><div id="simulation-interpretation-text"></div></div>
+                                        <div class="join join-vertical w-full mt-3">
+                                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                                <summary class="collapse-title font-medium text-sm">📊 Графік ймовірностей</summary>
+                                                <div class="collapse-content"><div class="simulation-chart-container"><canvas id="simulation-chart"></canvas></div></div>
+                                            </details>
+                                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                                <summary class="collapse-title font-medium text-sm">👥 Ймовірності учасників <span class="text-xs text-base-content/50 font-normal">(сортування: найвища очікувана)</span></summary>
+                                                <div class="collapse-content"><div id="simulation-results-table"></div></div>
+                                            </details>
+                                            <details class="collapse collapse-arrow join-item border border-base-300 bg-base-100">
+                                                <summary class="collapse-title font-medium text-sm">💬 Інтерпретація результатів</summary>
+                                                <div class="collapse-content"><div id="simulation-interpretation-text"></div></div>
+                                            </details>
+                                        </div>
                                     </div>
                                 </div>
                             </details>

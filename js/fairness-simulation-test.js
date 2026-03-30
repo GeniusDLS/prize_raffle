@@ -180,12 +180,14 @@ function displaySimulationResults(participants, simData, exactProbabilities = nu
     const { winCounts, simulationCount, prizeCount, uniquePrizeCount } = simData;
     const useExact = exactProbabilities !== null;
 
-    // Теоретична ймовірність: точна (DP) або наближена K × w_i / W
+    // Теоретична ймовірність: точна (DP) або наближена 1-(1-w/W)^K
+    // Формула 1-(1-p)^K враховує що учасник може перемогти лише раз (вибірка без повернення)
+    // На відміну від K×w/W, не переоцінює ймовірність для учасників з великою вагою
     const stats = participants.map((p, idx) => {
         const empirical = winCounts[p.name] / simulationCount;
         const theoretical = useExact
             ? exactProbabilities[idx]
-            : Math.min(1, prizeCount * p.weight / totalWeight);
+            : 1 - Math.pow(1 - p.weight / totalWeight, prizeCount);
         const deviation = empirical - theoretical;
         return { ...p, wins: winCounts[p.name], empirical, theoretical, deviation };
     });
@@ -234,7 +236,7 @@ function displaySimulationTable(stats, simulationCount, useExact = false) {
     const table = document.createElement('table');
     table.className = 'distribution-table';
 
-    const theorLabel = useExact ? 'Теоретична (точна, DP)' : 'Теоретична (K×w/W)';
+    const theorLabel = useExact ? 'Теоретична (точна, DP)' : 'Теоретична (1-(1-p)ᴷ)';
     const header = `
         <thead>
             <tr>
@@ -320,7 +322,7 @@ function displaySimulationInterpretation(stats, simData, avgDeviation, expectedA
         у учасника «${escapeHtml(maxDeviationStat.name)}».</p>
         ${useExact
             ? `<p><strong>Теоретична ймовірність</strong> обчислена точно методом динамічного програмування (DP) — повністю враховує ефект вилучення переможців з пулу. Формула K×w/W не використовується.</p>`
-            : `<p><strong>Теоретична ймовірність</strong> ≈ K × w_i / W (наближення — не враховує ефект вилучення для учасників з підвищеною вагою).</p>`
+            : `<p><strong>Теоретична ймовірність</strong> ≈ 1 - (1 - w/W)ᴷ — наближення для вибірки без повернення. Точніше за K×w/W: правильно враховує що учасник може перемогти лише раз, не переоцінює ймовірність для учасників з великою вагою.</p>`
         }
         <p><strong>Висновок:</strong> Оцінка базується на порівнянні з очікуваним статистичним шумом
         при ${simulationCount.toLocaleString()} симуляціях. Відхилення ≤1.2× норми — відмінно,
