@@ -23,12 +23,16 @@ window.ModuleName = {
 
 | Module | Role |
 |--------|------|
-| `data-manager.js` | State (participants/prizes/results), localStorage, CRUD, Excel import, sorting, presets. Also defines `window.Logger` |
+| `data-manager.js` | State (participants/prizes/results), localStorage CRUD, Excel import/export, sorting, presets. Also defines `window.Logger` |
 | `audio-data.js` | Container for Base64 audio data (`AUDIO_BASE64_DATA`) |
 | `sound-manager.js` | Sound playback: Base64 files → Web Audio API synthesis as fallback |
-| `raffle-engine.js` | Raffle logic, drum animation, winner popup, animation settings |
-| `ui-controller.js` | DOM rendering of lists, navigation, inline editing, themes |
-| `fairness-tests.js` | RNG quality statistical tests (Runs Test + Chi-square) |
+| `raffle-engine.js` | Raffle logic, weighted selection, drum animation, winner popup, `secureRandom()` |
+| `ui-controller.js` | DOM rendering of lists/pages, inline editing, theme switching, `escapeHtml()` |
+| `fairness-tests.js` | Shared utilities + orchestrates lazy-loading of 4 submodules |
+| `fairness-sequence-test.js` | Runs Test — detects patterns in the RNG output |
+| `fairness-distribution-test.js` | Chi-square Test — checks weighted-fair prize distribution |
+| `fairness-fairness-test.js` | Fairness score — confidence intervals, Gini index |
+| `fairness-simulation-test.js` | Simulation test — runs N virtual raffles, shows stats |
 | `main.js` | Init queue + `window.fn` wrappers for `onclick` compatibility |
 
 ## Non-obvious Conventions
@@ -49,7 +53,7 @@ window.ModuleName = {
 
 ## Versioning
 
-Version lives in `.app-version` element in `index.html` (`vMAJOR.MINOR.PATCH`). Current: **v3.0.0**.
+Version lives in `.app-version` element in `index.html` (`vMAJOR.MINOR.PATCH`). Current: **v3.2.3**.
 Update version in the same commit as code changes. Commit prefix: `feat:`, `fix:`, or `refactor:`.
 
 ## Communication
