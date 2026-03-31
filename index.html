@@ -118,6 +118,7 @@
                                 <tbody id="participants-list"></tbody>
                             </table>
                         </div>
+                        <div id="participants-pagination"></div>
                     </div>
                 </div>
             </div>
@@ -386,7 +387,7 @@
                                     <p class="text-sm text-base-content/70 mb-3">Перевіряє наявність патернів у послідовності випадкових чисел. Хороший генератор не повинен мати передбачуваних послідовностей.</p>
                                     <div class="test-controls">
                                         <div class="flex flex-wrap items-center gap-3">
-                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <label for="runs-test-count" class="text-sm font-medium">Кількість симуляцій:</label>
                                             <input type="number" id="runs-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
                                             <button class="btn btn-primary btn-sm" onclick="runSequenceTest()">🚀 Запустити тест</button>
                                             <button class="btn btn-neutral btn-sm" onclick="clearTestResults()">🧹 Очистити</button>
@@ -416,7 +417,7 @@
                                     <p class="text-sm text-base-content/70 mb-3">Перевірка відповідності результатів розіграшу очікуваному розподілу з урахуванням ваги учасників. Проводиться на реальних даних.</p>
                                     <div class="test-controls">
                                         <div class="flex flex-wrap items-center gap-3">
-                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <label for="distribution-test-count" class="text-sm font-medium">Кількість симуляцій:</label>
                                             <input type="number" id="distribution-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
                                             <button class="btn btn-primary btn-sm" onclick="runDistributionTest()">🚀 Запустити тест</button>
                                             <button class="btn btn-neutral btn-sm" onclick="clearDistributionTestResults()">🧹 Очистити</button>
@@ -448,7 +449,7 @@
                                     <p class="text-sm text-base-content/70 mb-3">Комплексна перевірка справедливості алгоритму: довірчі інтервали, індекс Джині та загальний бал справедливості.</p>
                                     <div class="test-controls">
                                         <div class="flex flex-wrap items-center gap-3">
-                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <label for="fairness-test-count" class="text-sm font-medium">Кількість симуляцій:</label>
                                             <input type="number" id="fairness-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
                                             <button class="btn btn-primary btn-sm" onclick="runFairnessTest()">🚀 Запустити тест</button>
                                             <button class="btn btn-neutral btn-sm" onclick="clearFairnessTestResults()">🧹 Очистити</button>
@@ -480,7 +481,7 @@
                                     <p class="text-sm text-base-content/70 mb-3">Моделює повний розіграш N разів: переможець кожного призу виключається з пулу. Показує фактичну та теоретичну ймовірність отримання призу.</p>
                                     <div class="test-controls">
                                         <div class="flex flex-wrap items-center gap-3">
-                                            <label class="text-sm font-medium">Кількість симуляцій:</label>
+                                            <label for="simulation-test-count" class="text-sm font-medium">Кількість симуляцій:</label>
                                             <input type="number" id="simulation-test-count" value="1000" min="100" max="10000" step="100" class="input input-border input-sm w-32">
                                             <button class="btn btn-primary btn-sm" onclick="runSimulationTest()">🚀 Запустити</button>
                                             <button class="btn btn-neutral btn-sm" onclick="clearSimulationResults()">🧹 Очистити</button>

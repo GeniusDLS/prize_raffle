@@ -854,6 +854,20 @@ function setDrumText(drumElement, text) {
     }
 }
 
+function restoreRaffleButtonState() {
+    if (!window.DataManager.isRaffleActive) return;
+
+    const startBtn = document.getElementById('start-raffle-btn');
+    const nextBtn = document.getElementById('next-round-btn');
+    const resetBtn = document.getElementById('reset-raffle-btn');
+    const newBtn = document.getElementById('new-raffle-btn');
+
+    if (startBtn) startBtn.style.display = 'none';
+    if (nextBtn) { nextBtn.style.display = 'inline-block'; nextBtn.disabled = false; }
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+    if (newBtn) newBtn.style.display = 'none';
+}
+
 // ===== ЕКСПОРТ ФУНКЦІЙ ДЛЯ ГЛОБАЛЬНОГО ДОСТУПУ =====
 
 // Зробити функції доступними глобально
@@ -888,7 +902,8 @@ window.RaffleEngine = {
     showSettingsSaveIndicator,
     
     // Ініціалізація
-    initializePopupHandlers
+    initializePopupHandlers,
+    restoreRaffleButtonState
 };
 
 // Глобальні функції видалено - використовуються через обгортки в main.js або RaffleEngine модуль

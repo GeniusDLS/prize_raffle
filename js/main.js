@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // 5. Ініціалізувати статистику для сторінки розіграшу
         if (window.DataManager.isRaffleActive) {
             window.UIController.updateRaffleStats();
+            // Відновити видимість кнопок після перезавантаження під час активного розіграшу
+            window.RaffleEngine.restoreRaffleButtonState();
         } else {
             window.UIController.initializeRaffleStats();
         }

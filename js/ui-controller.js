@@ -126,17 +126,29 @@ function updateDisplay() {
 let editingParticipantIndex = -1;
 let editingPrizeIndex = -1;
 
+// ===== ПАГІНАЦІЯ УЧАСНИКІВ =====
+const PARTICIPANTS_PAGE_SIZE = 50;
+let participantPage = 0;
+
 function updateParticipantsList() {
     const tbody = document.getElementById('participants-list');
     if (!tbody) return;
 
     const participants = window.DataManager.participants;
-    tbody.innerHTML = '';
+    const total = participants.length;
+    const totalPages = Math.max(1, Math.ceil(total / PARTICIPANTS_PAGE_SIZE));
 
-    participants.forEach((participant, index) => {
-        const row = document.createElement('tr');
+    // Утримати сторінку в допустимих межах
+    if (participantPage >= totalPages) participantPage = totalPages - 1;
+    if (participantPage < 0) participantPage = 0;
+
+    const start = participantPage * PARTICIPANTS_PAGE_SIZE;
+    const end = Math.min(start + PARTICIPANTS_PAGE_SIZE, total);
+
+    tbody.innerHTML = participants.slice(start, end).map((participant, localIndex) => {
+        const index = start + localIndex;
         if (index === editingParticipantIndex) {
-            row.innerHTML = `
+            return `<tr>
                 <td><input class="inline-edit" type="text" id="edit-p-name" value="${escapeHtml(participant.name)}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
                 <td><input class="inline-edit" type="text" id="edit-p-position" value="${escapeHtml(participant.position || '')}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
                 <td><input class="inline-edit" type="text" id="edit-p-division" value="${escapeHtml(participant.division || '')}" onkeydown="handleEditKeydown(event,'participant',${index})"></td>
@@ -145,26 +157,55 @@ function updateParticipantsList() {
                     <button class="btn btn-success btn-sm" onclick="saveEditParticipant(${index})" title="Зберегти">✓</button>
                     <button class="btn btn-secondary btn-sm" onclick="cancelEditParticipant()" title="Скасувати">✕</button>
                 </td>
-            `;
-        } else {
-            row.innerHTML = `
-                <td>${escapeHtml(participant.name)}</td>
-                <td>${escapeHtml(participant.position) || '—'}</td>
-                <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
-                <td>${escapeHtml(participant.weight)}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" onclick="startEditParticipant(${index})" title="Редагувати">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="removeParticipant(${index})" title="Видалити">✕</button>
-                </td>
-            `;
+            </tr>`;
         }
-        tbody.appendChild(row);
-    });
+        return `<tr>
+            <td>${escapeHtml(participant.name)}</td>
+            <td>${escapeHtml(participant.position) || '—'}</td>
+            <td>${escapeHtml(participant.division) || 'Не вказано'}</td>
+            <td>${escapeHtml(participant.weight)}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="startEditParticipant(${index})" title="Редагувати">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="removeParticipant(${index})" title="Видалити">✕</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    renderParticipantsPagination(total, totalPages, start, end);
+}
+
+function renderParticipantsPagination(total, totalPages, start, end) {
+    const container = document.getElementById('participants-pagination');
+    if (!container) return;
+
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const prevDisabled = participantPage === 0 ? 'disabled' : '';
+    const nextDisabled = participantPage >= totalPages - 1 ? 'disabled' : '';
+
+    container.innerHTML = `
+        <div class="flex items-center justify-between mt-2 text-sm">
+            <span class="text-base-content/60">${start + 1}–${end} з ${total}</span>
+            <div class="flex items-center gap-1">
+                <button class="btn btn-ghost btn-xs" onclick="showParticipantPage(${participantPage - 1})" ${prevDisabled}>&#8592;</button>
+                <span class="px-2">${participantPage + 1} / ${totalPages}</span>
+                <button class="btn btn-ghost btn-xs" onclick="showParticipantPage(${participantPage + 1})" ${nextDisabled}>&#8594;</button>
+            </div>
+        </div>`;
+}
+
+function showParticipantPage(page) {
+    participantPage = page;
+    updateParticipantsList();
 }
 
 function startEditParticipant(index) {
     editingParticipantIndex = index;
     editingPrizeIndex = -1;
+    participantPage = Math.floor(index / PARTICIPANTS_PAGE_SIZE);
     updateParticipantsList();
     const nameInput = document.getElementById('edit-p-name');
     if (nameInput) { nameInput.focus(); nameInput.select(); }
@@ -218,31 +259,27 @@ function updatePrizesList() {
     if (!tbody) return;
 
     const prizes = window.DataManager.prizes;
-    tbody.innerHTML = '';
 
-    prizes.forEach((prize, index) => {
-        const row = document.createElement('tr');
+    tbody.innerHTML = prizes.map((prize, index) => {
         if (index === editingPrizeIndex) {
-            row.innerHTML = `
+            return `<tr>
                 <td><input class="inline-edit" type="text" id="edit-pr-name" value="${escapeHtml(prize.name)}" onkeydown="handleEditKeydown(event,'prize',${index})"></td>
                 <td><input class="inline-edit inline-edit-number" type="number" id="edit-pr-count" value="${prize.count}" min="1" onkeydown="handleEditKeydown(event,'prize',${index})"></td>
                 <td>
                     <button class="btn btn-success btn-sm" onclick="saveEditPrize(${index})" title="Зберегти">✓</button>
                     <button class="btn btn-secondary btn-sm" onclick="cancelEditPrize()" title="Скасувати">✕</button>
                 </td>
-            `;
-        } else {
-            row.innerHTML = `
-                <td>${escapeHtml(prize.name)}</td>
-                <td>${escapeHtml(prize.count)}</td>
-                <td>
-                    <button class="btn btn-warning btn-sm" onclick="startEditPrize(${index})" title="Редагувати">✏️</button>
-                    <button class="btn btn-danger btn-sm" onclick="removePrize(${index})" title="Видалити">✕</button>
-                </td>
-            `;
+            </tr>`;
         }
-        tbody.appendChild(row);
-    });
+        return `<tr>
+            <td>${escapeHtml(prize.name)}</td>
+            <td>${escapeHtml(prize.count)}</td>
+            <td>
+                <button class="btn btn-warning btn-sm" onclick="startEditPrize(${index})" title="Редагувати">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="removePrize(${index})" title="Видалити">✕</button>
+            </td>
+        </tr>`;
+    }).join('');
 }
 
 function startEditPrize(index) {
@@ -765,6 +802,9 @@ window.UIController = {
     hideSettings,
     showSettingsTab,
     
+    // Пагінація учасників
+    showParticipantPage,
+
     // Підзакладки даних
     showDataTab,
     saveActiveDataTab,
@@ -804,5 +844,14 @@ window.updateSortButtonsState = updateSortButtonsState;
 window.applyTheme = applyTheme;
 
 // Глобальні функції для сортування та перемішування (для HTML onclick)
-window.sortParticipants = window.DataManager.sortParticipants;
-window.shuffleParticipants = window.DataManager.shuffleParticipants;
+window.showParticipantPage = showParticipantPage;
+
+// При сортуванні та перемішуванні — повертаємось на першу сторінку
+window.sortParticipants = function(field) {
+    participantPage = 0;
+    window.DataManager.sortParticipants(field);
+};
+window.shuffleParticipants = function() {
+    participantPage = 0;
+    window.DataManager.shuffleParticipants();
+};
