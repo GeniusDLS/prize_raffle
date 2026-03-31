@@ -66,7 +66,9 @@ function startRaffle() {
 
     const startBtn = document.getElementById('start-raffle-btn');
     if (startBtn) startBtn.style.display = 'none';
-    
+    const resetBtn = document.getElementById('reset-raffle-btn');
+    if (resetBtn) resetBtn.style.display = 'inline-block';
+
     // Оновити статистику
     if (typeof updateRaffleStats === 'function') updateRaffleStats();
     window.DataManager.markAsChanged(); // Зберегти початок розіграшу
@@ -231,7 +233,7 @@ function nextRound() {
     }, animationSettings.spinDuration * 1000);
 
     const nextBtn = document.getElementById('next-round-btn');
-    if (nextBtn) nextBtn.style.display = 'none';
+    if (nextBtn) nextBtn.disabled = true;
 }
 
 /**
@@ -297,9 +299,11 @@ function startNewRaffle() {
         setDrumText(participantDrum, 'Готовий до розіграшу!');
         setDrumText(prizeDrum, 'Готовий до розіграшу!');
         if (startBtn) startBtn.style.display = 'inline-block';
-        if (nextBtn) nextBtn.style.display = 'none';
+        if (nextBtn) { nextBtn.style.display = 'none'; nextBtn.disabled = false; }
         if (newBtn) newBtn.style.display = 'none';
-        
+        const resetBtn = document.getElementById('reset-raffle-btn');
+        if (resetBtn) resetBtn.style.display = 'none';
+
         // Оновити статистику
         if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
         window.DataManager.markAsChanged(); // Зберегти новий стан
@@ -370,9 +374,11 @@ function resetRaffle() {
     setDrumText(participantDrum, 'Готовий до розіграшу!');
     setDrumText(prizeDrum, 'Готовий до розіграшу!');
     if (startBtn) startBtn.style.display = 'inline-block';
-    if (nextBtn) nextBtn.style.display = 'none';
+    if (nextBtn) { nextBtn.style.display = 'none'; nextBtn.disabled = false; }
     if (newBtn) newBtn.style.display = 'none';
-    
+    const resetBtn = document.getElementById('reset-raffle-btn');
+    if (resetBtn) resetBtn.style.display = 'none';
+
     // Оновити статистику та результати
     if (typeof initializeRaffleStats === 'function') initializeRaffleStats();
     if (typeof updateResultsDisplay === 'function') updateResultsDisplay();
@@ -393,7 +399,7 @@ function showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName) 
         const nextBtn = document.getElementById('next-round-btn');
         
         if (availableParticipants.length > 0 && availablePrizes.length > 0) {
-            if (nextBtn) nextBtn.style.display = 'inline-block';
+            if (nextBtn) { nextBtn.style.display = 'inline-block'; nextBtn.disabled = false; }
         } else {
             // Якщо немає більше учасників або призів, завершити розіграш
             setTimeout(() => {
@@ -524,7 +530,7 @@ function showWinnerPopup(winnerName, winnerPosition, winnerDivision, prizeName) 
     const nextBtn = document.getElementById('next-round-btn');
     
     if (availableParticipants.length > 0 && availablePrizes.length > 0) {
-        if (nextBtn) nextBtn.style.display = 'inline-block';
+        if (nextBtn) { nextBtn.style.display = 'inline-block'; nextBtn.disabled = false; }
     } else {
         // Якщо немає більше учасників або призів, завершити розіграш
         setTimeout(() => {
