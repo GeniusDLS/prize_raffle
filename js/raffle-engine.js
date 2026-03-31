@@ -68,6 +68,8 @@ function startRaffle() {
     if (startBtn) startBtn.style.display = 'none';
     const resetBtn = document.getElementById('reset-raffle-btn');
     if (resetBtn) resetBtn.style.display = 'inline-block';
+    const nextBtnInit = document.getElementById('next-round-btn');
+    if (nextBtnInit) nextBtnInit.style.display = 'inline-block';
 
     // Оновити статистику
     if (typeof updateRaffleStats === 'function') updateRaffleStats();
